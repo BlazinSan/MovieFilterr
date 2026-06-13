@@ -6,8 +6,11 @@
      TMDB_TOKEN    — a v4 Read Access Token (long JWT, sent as Bearer)
 */
 
-const V3_KEY = process.env.TMDB_API_KEY || "";
-const V4_TOKEN = process.env.TMDB_TOKEN || "";
+// strip BOM / whitespace / control chars that can sneak in when a key is set
+// via a shell pipe (PowerShell prepends a U+FEFF BOM, which breaks HTTP headers)
+const clean = (s) => (s || "").replace(/[^\x21-\x7E]/g, "");
+const V3_KEY = clean(process.env.TMDB_API_KEY);
+const V4_TOKEN = clean(process.env.TMDB_TOKEN);
 const BASE = "https://api.themoviedb.org/3";
 
 export const LIVE = !!(V3_KEY || V4_TOKEN);
