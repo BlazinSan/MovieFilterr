@@ -1,80 +1,103 @@
 # CUEPOINT — every scene, timestamped
 
-> Type any movie or show. CUEPOINT lays out **every parental-guidance notice on a
-> timeline** — exact timecodes, colour-coded by category. If a title contains
-> nudity, it surfaces **clean same-genre picks** that have none.
+> Search any movie or show. CUEPOINT detects parental-guidance content (nudity,
+> violence, profanity, substances, frightening, mature themes), lays out a
+> **scrubbable timeline of timestamped notices**, and — when nudity is present —
+> recommends **same-genre titles with no nudity flagged**.
 
-A single-page, dependency-free web app built for calm, informed viewing.
+**Live:** https://cuepoint-nine.vercel.app
 
-![CUEPOINT](docs/preview.png)
+A single-page front-end (no framework) backed by lightweight Vercel serverless
+functions that proxy **TMDB** for live search and nudity detection.
 
 ---
 
 ## What it does
 
-1. **Scan** — search any title (fuzzy matching finds it from a fragment, initials, or a typo).
-2. **Timeline** — every advisory is pinned to its timecode across colour-coded,
-   scrubbable lanes. Drag the playhead, hover a marker, or use the arrow keys.
-3. **Cue list** — a second-by-second list of every notice: category, severity, and what happens. Filter by category.
-4. **Clean picks** — if nudity is present, it recommends same-genre titles with
-   **none in the log**, ranked by genre overlap.
+1. **Search** any title — live via TMDB (any film/show ever made), with fuzzy
+   fallback over a curated library when TMDB isn't configured.
+2. **Nudity verdict** — three honest states:
+   - **Contains nudity** — confirmed (TMDB nudity keyword present, or in our verified log).
+   - **No nudity** — only for titles in our hand-verified log.
+   - **Unconfirmed** — TMDB has no nudity tag, *which is not a guarantee of none*
+     (TMDB's crowd tags are sparse). The UI points you to the IMDb Parents Guide.
+3. **Timeline** — for titles in our verified log, every advisory is pinned to its
+   timecode across colour-coded, scrubbable lanes (drag the playhead, hover a marker, arrow-key it).
+4. **Cue list** — a second-by-second list of every notice: category, severity, description, filterable.
+5. **Clean picks** — same-genre recommendations filtered to exclude flagged nudity, ranked by genre overlap.
+6. **Source deep-links** — every result one-clicks out to IMDb Parents Guide,
+   Reddit, Unconsented, DoesTheDogDie, pre-searched for that exact title.
 
-Categories tracked: **Nudity & Sex · Violence & Gore · Profanity · Alcohol & Drugs ·
-Frightening & Intense · Mature Themes**, each with a 1–3 severity scale.
+## The honest data story
 
-## Honest note on the data
+**No public API returns frame-accurate nudity *timestamps* for arbitrary titles** —
+not TMDB, IMDb, Reddit, or any social platform (those have no such structured data,
+and scraping them is against ToS and technically blocked). So CUEPOINT is built from
+what *is* real and legitimate:
 
-There is **no free public API that returns *timestamped* parental advisories** for
-arbitrary titles. IMDb's Parents Guide, Common Sense Media, and similar sources have
-no machine-readable timecodes. So the timecodes in [`data.js`](data.js) are
-**hand-authored, illustrative reference data** for ~22 well-known films and shows —
-they are *not* a frame-accurate authority.
+| Source | What it actually gives | Used for |
+|--------|------------------------|----------|
+| **TMDB API** | search, genres, posters, certifications, **keyword tags** (incl. nudity), recommendations | live search, nudity *signal*, clean recs |
+| **Curated log** ([`data.js`](data.js)) | hand-authored, timestamped advisories for ~22 well-known titles | the scrubbable timeline + cue list |
+| **IMDb / Reddit / Unconsented / DTDD** | crowd-sourced scene info (no API) | one-click deep-link searches per title |
 
-The UI is built as a clean **demonstration layer over a swappable data source**: replace
-the `DATA` array (or feed it from a backend) and the timeline, cue list, nudity verdict,
-and recommendations all keep working unchanged. A realistic production source would be a
-moderated community database (think the model behind sites like *Does the Dog Die?*).
+TMDB keyword coverage for nudity is **high-precision, low-recall** — a positive tag
+is trustworthy, but its *absence* is not, so CUEPOINT never reports a false "no nudity"
+for a TMDB-only title; it says **unconfirmed** and links you to the authoritative
+IMDb Parents Guide.
 
-## Run it
+## Architecture
 
-It's pure HTML/CSS/JS — no build step.
-
-```bash
-# easiest: just open index.html in a browser
-# or serve it (recommended, avoids any file:// quirks):
-python -m http.server 5173
-#   → http://localhost:5173
+```
+index.html · styles.css · data.js · app.js      # static front-end (no build)
+api/
+  _lib/tmdb.js     # shared TMDB client + keyword nudity signal (key stays server-side)
+  config.js        # GET /api/config -> { live } (is TMDB configured?)
+  search.js        # GET /api/search?q= -> simplified multi-search
+  title.js         # GET /api/title?type=&id= -> detail + nudity + clean recs
+vercel.json · package.json
 ```
 
-## Deploy to GitHub Pages
+The TMDB key is **never exposed to the client** — the browser only ever calls our
+own `/api/*`. With no key set, the site runs in **demo mode** on the curated library.
+
+## Run locally
 
 ```bash
-git init
-git add .
-git commit -m "CUEPOINT"
-git branch -M main
-git remote add origin https://github.com/<you>/cuepoint.git
-git push -u origin main
+# static-only (demo mode, curated library):
+python -m http.server 5173          # -> http://localhost:5173
+
+# full live mode (serverless + TMDB):
+npm i -g vercel
+vercel dev                          # reads TMDB_TOKEN/TMDB_API_KEY from project env
 ```
 
-Then in the repo: **Settings → Pages → Build from branch → `main` / root**. Done — it's a static site.
+## Configure live TMDB search
 
-## Project structure
+Set **one** of these as an env var on the Vercel project (Settings → Environment Variables),
+then redeploy:
 
-| File | Role |
-|------|------|
-| [`index.html`](index.html) | Markup, font links, page structure |
-| [`styles.css`](styles.css) | Design system, animations, responsive + reduced-motion |
-| [`data.js`](data.js) | Curated dataset (`DATA`, `CATEGORIES`, `SEVERITY`) — **swap this for live data** |
-| [`app.js`](app.js) | Search, fuzzy matching, timeline scrubber, cue list, recommendations |
+| Var | Value |
+|-----|-------|
+| `TMDB_TOKEN` | TMDB **v4 Read Access Token** (long JWT) — sent as `Bearer` |
+| `TMDB_API_KEY` | TMDB **v3 API key** (32 chars) — sent as query param |
+
+Get one free at [themoviedb.org](https://www.themoviedb.org/settings/api). The app
+auto-detects via `/api/config` and flips the header badge to **Live · TMDB**.
+
+## Deploy
+
+```bash
+vercel --prod        # already linked to the "cuepoint" project
+```
 
 ## Design
 
-- **Type** — Clash Display (headlines) + Cabinet Grotesk (body) via Fontshare, JetBrains Mono for timecodes.
-- **Feel** — cinematic near-black, film-grain + vignette, drifting aurora, category-coded colour system.
+- **Type** — Clash Display + Cabinet Grotesk (Fontshare), JetBrains Mono for timecodes.
+- **Feel** — cinematic near-black, film-grain + vignette, drifting aurora, six-category colour system.
 - **Signature UI** — a multi-lane scrubbable scene timeline with animated markers and a live timecode readout.
-- **Accessible** — keyboard-scrubbable slider, ARIA roles, focus states, and full `prefers-reduced-motion` support.
-- **Fast** — no dependencies, no framework; CSS transforms, `IntersectionObserver` reveals, `requestAnimationFrame` counters.
+- **Accessible** — keyboard-scrubbable slider, ARIA roles, focus states, full `prefers-reduced-motion` support.
+- **Fast** — zero front-end dependencies; CSS transforms, `IntersectionObserver`, `requestAnimationFrame`.
 
 ---
 
