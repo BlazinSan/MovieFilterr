@@ -125,7 +125,9 @@
       poster: t.poster || null,
       imdb_id: t.imdb_id || null,
       advisories: cur ? cur.advisories : [],
-      liveNudity: t.nudity,
+      // API sends true (tagged) or null (no tag = unconfirmed). Only a real
+      // boolean drives a verdict; null falls through to the "unconfirmed" state.
+      liveNudity: t.nudity === true ? true : null,
       nudityKeywords: t.nudityKeywords || [],
       curated: !!cur,
       tmdbRecs: payload.recommendations || [],
@@ -251,21 +253,23 @@
         <div class="verdict verdict--flag">
           <span class="verdict__dot"></span>
           <p class="verdict__text"><strong>Contains nudity / sexual content.</strong> ${ts}
-          We've surfaced <strong>clean same-genre picks</strong> with none.${kw}</p>
+          We've surfaced <strong>same-genre picks with no nudity flagged</strong>.${kw}</p>
         </div>`;
     }
     if (nudityKnown(t)) {
       return `
         <div class="verdict verdict--clear">
           <span class="verdict__dot"></span>
-          <p class="verdict__text"><strong>No nudity detected.</strong>
-          ${hasTs ? "Other advisories are timestamped below." : "No nudity keywords were flagged for this title."}</p>
+          <p class="verdict__text"><strong>No nudity in our verified log.</strong>
+          ${hasTs ? "Other advisories are timestamped below." : ""}</p>
         </div>`;
     }
     return `
       <div class="verdict verdict--unknown">
         <span class="verdict__dot"></span>
-        <p class="verdict__text"><strong>Nudity status unconfirmed</strong> for this title — check the community sources below.</p>
+        <p class="verdict__text"><strong>Nudity unconfirmed.</strong> TMDB has no nudity tag for this title —
+        but TMDB's tags are sparse, so this is <em>not</em> a guarantee of none. The
+        <strong>IMDb Parents Guide</strong> (linked below) is the reliable yes/no.</p>
       </div>`;
   }
 
@@ -392,7 +396,8 @@
 
   function recsHTML(title, nud) {
     let items; // normalized: {key, title, year, cert, type, poster, overlap, shared, tmdbId}
-    if (title.tmdbRecs && title.tmdbRecs.length) {
+    const isLive = !!(title.tmdbRecs && title.tmdbRecs.length);
+    if (isLive) {
       items = title.tmdbRecs.map((r) => ({
         key: "tmdb-" + r.type + "-" + r.id, tmdbId: r.id, type: r.type,
         title: r.title, year: r.year, cert: r.cert, poster: r.poster,
@@ -405,14 +410,18 @@
       }));
     }
     if (!items.length) return "";
+    // live recs are filtered on TMDB tags (sparse) -> "not flagged"; curated recs are reliable
+    const badge = isLive ? "NO TAGGED NUDITY" : "NO NUDITY ✓";
+    const pill = isLive ? "NOT FLAGGED" : "NO NUDITY";
+    const caveat = isLive ? " <em>(TMDB tags are sparse — verify via the sources above.)</em>" : "";
     const head = nud
-      ? `<div class="recs__head"><h3>Clean picks, same genre</h3><span class="recs__badge">NO NUDITY ✓</span></div>
-         <p class="recs__sub">Because <strong>${title.title}</strong> contains nudity, here are titles sharing its genres with none detected.</p>`
-      : `<div class="recs__head"><h3>More like this</h3><span class="recs__badge">NO NUDITY ✓</span></div>
-         <p class="recs__sub">Same-genre titles also clear of nudity.</p>`;
+      ? `<div class="recs__head"><h3>${isLive ? "Same-genre, none flagged" : "Clean picks, same genre"}</h3><span class="recs__badge">${badge}</span></div>
+         <p class="recs__sub">Because <strong>${title.title}</strong> contains nudity, here are same-genre titles ${isLive ? "with no nudity tagged on TMDB" : "with none in our verified log"}.${caveat}</p>`
+      : `<div class="recs__head"><h3>More like this</h3><span class="recs__badge">${badge}</span></div>
+         <p class="recs__sub">Same-genre titles ${isLive ? "with no nudity flagged on TMDB" : "also clear of nudity"}.${caveat}</p>`;
     const cards = items.map((r) => `
       <button class="rec" data-key="${r.key}" ${r.tmdbId ? `data-tmdb-id="${r.tmdbId}" data-tmdb-type="${r.type}"` : ""} ${r.localId ? `data-local-id="${r.localId}"` : ""}>
-        <div class="rec__poster" style="${posterStyle(r)}">${posterInner(r)}<span class="rec__clean">NO NUDITY</span></div>
+        <div class="rec__poster" style="${posterStyle(r)}">${posterInner(r)}<span class="rec__clean">${pill}</span></div>
         <div class="rec__body">
           <span class="rec__title">${r.title}</span>
           <span class="rec__meta">${[r.year, r.cert, r.type === "tv" ? "TV" : "Film"].filter(Boolean).join(" · ")}</span>

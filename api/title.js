@@ -73,7 +73,10 @@ export default async function handler(req, res) {
         poster: IMG(d.poster_path, "w500"),
         backdrop: IMG(d.backdrop_path, "w780"),
         imdb_id: d.external_ids?.imdb_id || null,
-        nudity: nud.nudity,
+        // TMDB keyword coverage for nudity is sparse: a positive tag is
+        // reliable, but absence is NOT a guarantee. Emit true | null (never
+        // false) so the UI shows "unconfirmed" rather than a false negative.
+        nudity: nud.nudity ? true : null,
         nudityKeywords: nud.keywords,
       },
       recommendations,
