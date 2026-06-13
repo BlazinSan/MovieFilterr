@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="CUEPOINT — every parental-guidance notice, timestamped. Scrub any film or show by the second, and get clean same-genre picks when nudity appears." />
+  <meta name="theme-color" content="#07070b" />
+  <title>CUEPOINT — every scene, timestamped</title>
+
+  <!-- Distinctive type: Clash Display + Cabinet Grotesk (Fontshare), JetBrains Mono (Google) -->
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700,500&f[]=cabinet-grotesk@400,500,700&display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap"
+    rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- film-grain + vignette overlays -->
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <!-- intro curtain -->
+  <div class="intro" id="intro" aria-hidden="true">
+    <div class="intro__mark">
+      <span class="intro__cue">CUE</span><span class="intro__dot"></span><span class="intro__point">POINT</span>
+    </div>
+    <div class="intro__scan"></div>
+    <div class="intro__sub">loading the projection booth…</div>
+  </div>
+
+  <!-- top bar -->
+  <header class="topbar" id="topbar">
+    <a class="brand" href="#top" aria-label="CUEPOINT home">
+      <span class="brand__cue">CUE</span><span class="brand__dot" aria-hidden="true"></span><span class="brand__point">POINT</span>
+    </a>
+    <nav class="topbar__nav">
+      <a href="#how" class="topbar__link">How it works</a>
+      <a href="#library" class="topbar__link">Library</a>
+      <button class="topbar__cta" id="focusSearch">Scan a title <kbd>/</kbd></button>
+    </nav>
+  </header>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero" id="hero">
+      <div class="hero__inner">
+        <p class="hero__eyebrow">Parental guidance, to the second</p>
+        <h1 class="hero__title">
+          <span class="reveal-line"><span>Know every scene</span></span>
+          <span class="reveal-line"><span>before it <em>plays.</em></span></span>
+        </h1>
+        <p class="hero__lede">
+          Type any movie or show. CUEPOINT lays out <strong>every parental-guidance
+          notice on a timeline</strong> — exact timecodes, colour-coded by category.
+          If a title contains nudity, we surface <strong>clean same-genre picks</strong> instead.
+        </p>
+
+        <form class="search" id="searchForm" role="search" autocomplete="off">
+          <div class="search__field">
+            <span class="search__icon" aria-hidden="true">⌕</span>
+            <input
+              id="searchInput"
+              class="search__input"
+              type="text"
+              name="q"
+              placeholder="Try “Titanic”, “Stranger Things”, “Parasite”…"
+              aria-label="Search a movie or TV show"
+              aria-expanded="false"
+              aria-controls="suggest" />
+            <button type="submit" class="search__go" aria-label="Scan title">
+              <span>Scan</span>
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <ul class="suggest" id="suggest" role="listbox" aria-label="Suggestions"></ul>
+        </form>
+
+        <div class="hero__chips" id="quickChips" aria-label="Quick picks"></div>
+      </div>
+
+      <!-- decorative live timeline ribbon -->
+      <div class="hero__ribbon" aria-hidden="true">
+        <div class="ribbon__track" id="ribbonTrack"></div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section class="result" id="result" hidden aria-live="polite"></section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how" id="how">
+      <h2 class="section-title"><span>How it reads a title</span></h2>
+      <div class="how__grid">
+        <article class="how__card">
+          <div class="how__num">01</div>
+          <h3>Scan</h3>
+          <p>Enter any film or show. Fuzzy matching finds it even from a fragment or a typo.</p>
+        </article>
+        <article class="how__card">
+          <div class="how__num">02</div>
+          <h3>Timeline</h3>
+          <p>Every advisory is pinned to its timecode across colour-coded lanes you can scrub.</p>
+        </article>
+        <article class="how__card">
+          <div class="how__num">03</div>
+          <h3>Cue list</h3>
+          <p>A second-by-second list of each notice — category, severity and what happens.</p>
+        </article>
+        <article class="how__card how__card--accent">
+          <div class="how__num">04</div>
+          <h3>Clean picks</h3>
+          <p>If nudity is present, we recommend same-genre titles with none — verified clear.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- LIBRARY -->
+    <section class="library" id="library">
+      <h2 class="section-title"><span>In the library</span></h2>
+      <p class="library__hint">Curated, timestamped reference data. Click any title to scan it.</p>
+      <div class="library__grid" id="libraryGrid"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer__brand"><span class="brand__cue">CUE</span><span class="brand__dot"></span><span class="brand__point">POINT</span></div>
+    <p class="footer__note">
+      Timecodes are hand-authored illustrative reference data for well-known titles —
+      not a frame-accurate authority. No public API exposes timestamped advisories;
+      this is the demonstration layer, built to accept a live data source.
+    </p>
+    <p class="footer__legal">Made for informed, calmer viewing. © <span id="year"></span> CUEPOINT.</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
