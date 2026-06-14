@@ -5,7 +5,7 @@
 > **scrubbable timeline of timestamped notices**, and — when nudity is present —
 > recommends **same-genre titles with no nudity flagged**.
 
-**Live:** https://cuepoint-nine.vercel.app
+**Live:** https://moviefilterr.vercel.app
 
 A single-page front-end (no framework) backed by lightweight Vercel serverless
 functions that proxy **TMDB** for live search and nudity detection.
@@ -92,7 +92,7 @@ auto-detects via `/api/config` and switches to live search automatically.
 ## Deploy
 
 ```bash
-vercel --prod        # already linked to the "cuepoint" project
+vercel --prod        # already linked to the "moviefilterr" project
 ```
 
 ## Design
