@@ -726,6 +726,77 @@ a.tag--live:hover { border-color: var(--teal); color: var(--teal); background: r
   .topbar__cta { padding: 7px 12px; font-size: .78rem; }
 }
 
+/* ================= v4: phone polish, headlines, brand, nudity-first ============= */
+
+/* wider desktop — use more of the screen */
+:root { --maxw: 1440px; }
+.hero__inner { max-width: 900px; }
+
+/* fix hero search button overlapping the input on phone (flex child must shrink) */
+.search__input { min-width: 0; }
+
+/* headlines bigger again */
+.hero__title { font-size: clamp(3.5rem, 10.5vw, 7.6rem); line-height: 1.02; }
+.section-title { font-size: clamp(1.95rem, 4.6vw, 3.2rem); }
+.rhead__title { font-size: clamp(2.1rem, 4.8vw, 3.2rem); }
+.how__card h3 { font-size: 1.6rem; }
+
+/* brand: icon + larger */
+.brand { font-size: 1.7rem; }
+.brand__icon { width: 1.14em; height: 1.14em; margin-right: .42em; border-radius: 7px; box-shadow: 0 2px 10px rgba(0,0,0,.35); }
+@media (max-width: 720px) { .brand { font-size: 1.3rem; } .brand__icon { margin-right: .34em; } }
+
+/* "parental guidance, to the second" — readable in light mode */
+[data-theme="light"] .hero__eyebrow { color: #0a7a61; }
+
+/* clean collapse interaction — no tap-highlight box, hover only on real pointers */
+* { -webkit-tap-highlight-color: transparent; }
+.ssec-head { background: transparent; }
+.ssec-head:focus { outline: none; }
+@media (hover: hover) { .ssec-head:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); } }
+
+/* nudity timestamps surfaced first */
+.nudts { padding: 26px 24px; border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 10%, transparent), transparent 72%); }
+.nudts__head { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
+.nudts__glyph { color: var(--cat); font-size: 1.15rem; }
+.nudts__head h3 { font-family: "Life Cinema Screen", sans-serif; font-weight: 700; font-size: 1.25rem; letter-spacing: .045em; }
+.nudts__count { color: var(--cat); font-family: "JetBrains Mono", monospace; font-size: .76rem; margin-left: auto; }
+.nudts__list { display: flex; flex-direction: column; gap: 9px; }
+.nudts__row { display: grid; grid-template-columns: 96px 1fr auto; align-items: center; gap: 14px;
+  padding: 13px 16px; border: 1px solid color-mix(in srgb, var(--cat) 30%, transparent);
+  border-radius: var(--r-md); background: var(--panel); }
+.nudts__time { color: var(--cat); font-size: .96rem; font-weight: 700; }
+.nudts__note { color: var(--ink); font-size: .97rem; }
+.nudts__sev { font-family: "JetBrains Mono", monospace; font-size: .66rem; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--cat); border: 1px solid color-mix(in srgb, var(--cat) 40%, transparent); padding: 4px 10px; border-radius: 100px; }
+
+/* scroll fade-up for result sections */
+.sreveal { opacity: 0; transform: translateY(30px); transition: opacity .65s var(--ease), transform .65s var(--ease); }
+.sreveal.in { opacity: 1; transform: none; }
+
+/* desktop: share floats at the top-right of the header */
+@media (min-width: 641px) {
+  .rhead__main { position: relative; }
+  .sharebtn { position: absolute; top: 0; right: 0; margin-top: 0; }
+  .rhead__kicker, .rhead__title { padding-right: 128px; }
+}
+
+/* phone: poster on top, genres below it, share below the quote */
+@media (max-width: 640px) {
+  .rhead { display: flex; flex-direction: column; gap: 18px; padding: 22px; }
+  .rhead__postercol { width: 152px; }
+  .rhead__poster { width: 152px; }
+  .rhead__main { position: static; display: flex; flex-direction: column; gap: 4px; }
+  .rhead__kicker { order: 1; margin-bottom: 6px; }
+  .rhead__title { order: 2; padding-right: 0; }
+  .rhead__tagline { order: 3; }
+  .sharebtn { order: 4; position: static; align-self: flex-start; margin-top: 10px; }
+  .rhead__genres { order: 5; margin-top: 12px; }
+  .nudts__row { grid-template-columns: 64px 1fr; }
+  .nudts__sev { grid-column: 2; justify-self: start; margin-top: 2px; }
+}
+
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }

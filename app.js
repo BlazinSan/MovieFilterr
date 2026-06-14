@@ -220,6 +220,7 @@
       <article class="rcard">
         ${headerHTML(title)}
         ${verdictHTML(title, nud, hasTimestamps)}
+        ${nudityFirstHTML(advisories)}
         ${hasAdvisories ? summaryHTML(byCat, usedCats, advisories.length, hasTimestamps) : ""}
         ${hasTimestamps ? timelineHTML(title, withTs, usedCats) : ""}
         ${hasAdvisories ? cueListHTML(advisories, usedCats, hasTimestamps) : noTimestampsHTML(title, nud)}
@@ -232,7 +233,19 @@
     if (hasAdvisories) { wireFilters(); countUp(); wireCollapse(); }
     wireShare(title);
     wireRecClicks();
+    wireScrollReveal();
     result.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }
+
+  // gentle fade-up of result sections as they scroll into view
+  function wireScrollReveal() {
+    const els = $$(".rcard > section", result);
+    if (reduce || !("IntersectionObserver" in window)) { els.forEach((el) => el.classList.add("in")); return; }
+    els.forEach((el) => el.classList.add("sreveal"));
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    }), { threshold: 0.06, rootMargin: "0px 0px -7% 0px" });
+    els.forEach((el) => io.observe(el));
   }
 
   function headerHTML(t) {
@@ -240,10 +253,18 @@
     const live = tmdbUrl
       ? `<a class="tag tag--live" href="${tmdbUrl}" target="_blank" rel="noopener noreferrer" title="View on TMDB">TMDB ↗</a>`
       : "";
+    const shareBtn = `
+      <button class="sharebtn" id="shareBtn" type="button" aria-label="Share a summary card">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3v13M12 3l-4 4M12 3l4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Share</span>
+      </button>`;
     return `
       <header class="rhead">
-        <div class="rhead__poster" style="${posterStyle(t)}">${posterInner(t, true)}</div>
+        <div class="rhead__postercol">
+          <div class="rhead__poster" style="${posterStyle(t)}">${posterInner(t, true)}</div>
+        </div>
         <div class="rhead__main">
+          ${shareBtn}
           <div class="rhead__kicker">
             ${live}
             <span class="tag tag--cert">${t.cert || "NR"}</span>
@@ -251,13 +272,7 @@
             ${t.year ? `<span class="tag">${t.year}</span>` : ""}
             ${t.runtime ? `<span class="tag">${fmtTime(t.runtime)}${t.type === "tv" ? " / ep" : ""}</span>` : ""}
           </div>
-          <div class="rhead__titlerow">
-            <h2 class="rhead__title">${t.title}</h2>
-            <button class="sharebtn" id="shareBtn" type="button" aria-label="Share a summary card">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3v13M12 3l-4 4M12 3l4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span>Share</span>
-            </button>
-          </div>
+          <h2 class="rhead__title">${t.title}</h2>
           ${t.tagline ? `<p class="rhead__tagline">“${t.tagline}”</p>` : ""}
           <div class="rhead__genres">${(t.genres || []).map((g) => `<span class="genre">${g}</span>`).join("")}</div>
         </div>
@@ -302,6 +317,27 @@
         community verdict on DoesTheDogDie yet — so this is <em>not</em> a guarantee of none.
         The <strong>IMDb Parents Guide</strong> (linked below) is the reliable yes/no.</p>
       </div>`;
+  }
+
+  // when we have timestamped nudity advisories, surface them up top, before the summary
+  function nudityFirstHTML(advisories) {
+    const nt = advisories
+      .filter((a) => a.category === "nudity" && typeof a.t === "number")
+      .sort((a, b) => a.t - b.t);
+    if (!nt.length) return "";
+    const rows = nt.map((a) => `
+      <div class="nudts__row">
+        <span class="nudts__time mono">${fmtTime(a.t)}</span>
+        <div class="nudts__body"><span class="nudts__note">${a.note}</span></div>
+        <span class="nudts__sev">${SEVERITY[a.severity].label}</span>
+      </div>`).join("");
+    return `
+      <section class="nudts" style="--cat:${CATEGORIES.nudity.color}">
+        <div class="nudts__head"><span class="nudts__glyph">${CATEGORIES.nudity.glyph}</span>
+          <h3>Nudity &amp; sexual content — when</h3>
+          <span class="nudts__count mono">${nt.length} scene${nt.length > 1 ? "s" : ""}</span></div>
+        <div class="nudts__list">${rows}</div>
+      </section>`;
   }
 
   function summaryHTML(byCat, usedCats, total, hasTimestamps) {
@@ -635,12 +671,19 @@
   /* --------------------- share a summary card image --------------------- */
   function slug(s) { return (s || "title").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
 
+  // shareable deep link that re-opens this exact title
+  function titleLink(t) {
+    const base = "https://moviefilterr.vercel.app/";
+    if (t.tmdbId) return `${base}?id=${t.type}-${t.tmdbId}`;
+    return `${base}?q=${encodeURIComponent(t.title)}`;
+  }
+
   function shareSummaryText(t) {
     const nud = nudityOf(t);
     const verdict = nud ? "⚠ Contains nudity/sex" : nudityKnown(t) ? "✓ No nudity" : "Nudity unconfirmed";
     const cats = [...new Set((t.advisories || []).map((a) => CATEGORIES[a.category].label))];
     const extra = cats.length ? ` · Flagged: ${cats.slice(0, 4).join(", ")}` : "";
-    return `${t.title}${t.year ? ` (${t.year})` : ""} — ${verdict}${extra}. Know before you watch → moviefilterr.vercel.app`;
+    return `${t.title}${t.year ? ` (${t.year})` : ""} — ${verdict}${extra}. Know before you watch → ${titleLink(t)}`;
   }
 
   function loadShareImage(url) {
@@ -770,8 +813,11 @@
         const blob = await buildShareImage(t);
         const file = new File([blob], `${slug(t.title)}-moviefilterr.png`, { type: "image/png" });
         const text = shareSummaryText(t);
+        const url = titleLink(t);
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: `${t.title} — MovieFilterr`, text });
+          await navigator.share({ files: [file], title: `${t.title} — MovieFilterr`, text, url });
+        } else if (navigator.share) {
+          await navigator.share({ title: `${t.title} — MovieFilterr`, text, url });
         } else {
           const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
           a.download = file.name; document.body.appendChild(a); a.click();
@@ -984,6 +1030,18 @@
     if (input) input.placeholder = LIVE
       ? "Search any movie or show — “Oppenheimer”, “The Bear”, “Saltburn”…"
       : "Try “Titanic”, “Stranger Things”, “Parasite”…";
+    openFromUrl();
+  }
+
+  // shared deep links: ?id=movie-603 (exact) or ?q=The Matrix
+  async function openFromUrl() {
+    const p = new URLSearchParams(location.search);
+    const id = p.get("id"), q = p.get("q");
+    if (id) {
+      const mm = id.match(/^(movie|tv)-(\d+)$/);
+      if (mm && LIVE) { $("#searchInput").value = ""; resolveAndRender(mm[1], mm[2]); return; }
+    }
+    if (q) { $("#searchInput").value = q; runQuery(q); }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
