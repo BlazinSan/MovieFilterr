@@ -666,7 +666,7 @@
       const res = await apiSearch(q);
       if (mySeq !== seq) return; // stale
       if (res.length) {
-        renderSuggest(res.map((r) => ({
+        renderSuggest(res.slice(0, 6).map((r) => ({
           id: r.id, title: r.title, year: r.year, type: r.type, tmdbType: r.type,
           poster: r.poster, genresLabel: "", _live: true,
         })));
