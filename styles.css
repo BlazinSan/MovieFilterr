@@ -631,8 +631,16 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 
 /* ============ v3: fonts, share, advisories, mobile, whitespace ============ */
 
-/* headline font tuning for Life Cinema Screen */
-.hero__title, .rhead__title, .section-title, .how__card h3 { letter-spacing: -.01em; }
+/* headline font tuning for Life Cinema Screen — bigger + more tracking */
+.hero__title, .rhead__title, .section-title, .how__card h3,
+.summary__head h3, .timeline__head h3, .cuelist__head h3,
+.recs__head h3, .sources h3, .notimes h3, .empty h3 { letter-spacing: .045em; }
+.hero__title { font-size: clamp(3.1rem, 9.5vw, 6.8rem); line-height: 1.04; letter-spacing: .04em; }
+.section-title { font-size: clamp(1.7rem, 4vw, 2.8rem); }
+.rhead__title { font-size: clamp(1.9rem, 4.4vw, 2.9rem); line-height: 1.1; }
+.how__card h3 { font-size: 1.5rem; }
+.brand, .footer__brand, .intro__mark { letter-spacing: .03em; }
+.brand { font-size: 1.5rem; }
 
 /* clickable TMDB tag */
 a.tag--live { cursor: pointer; transition: border-color .2s, color .2s, background .2s, transform .2s; }
@@ -660,6 +668,21 @@ a.tag--live:hover { border-color: var(--teal); color: var(--teal); background: r
 .cue__sevtag[data-sev="3"] { color: #07070b; background: var(--cat); border-color: transparent; font-weight: 700; }
 .cue__sevtag[data-sev="2"] { color: var(--cat); border-color: var(--cat); }
 .cue__votes { font-family: "JetBrains Mono", monospace; font-size: .78rem; color: var(--c-substances); margin-left: 6px; }
+
+/* collapsible sections (advisory summary + cue list) */
+.ssec-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; cursor: pointer; user-select: none; border-radius: 10px; transition: background .2s; }
+.ssec-head:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.ssec-head:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+.ssec-head--inline { flex: 1 1 auto; min-width: 0; }
+.ssec-head__l { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.collapse-toggle { flex: none; color: var(--ink-dim); display: inline-grid; place-items: center; transition: transform .35s var(--ease), color .2s; }
+.ssec-head:hover .collapse-toggle { color: var(--ink); }
+.is-collapsed .collapse-toggle { transform: rotate(-90deg); }
+.collapse-wrap { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .38s var(--ease), opacity .3s var(--ease); margin-top: 4px; }
+.collapse-wrap > .collapse-inner { overflow: hidden; min-height: 0; }
+.is-collapsed .collapse-wrap { grid-template-rows: 0fr; opacity: 0; margin-top: 0; }
+/* keep the cue-list filters from forcing the head full-width */
+.cuelist .cuelist__head { align-items: center; }
 
 /* whitespace / rhythm */
 .rhead { padding: 34px; gap: 28px; }

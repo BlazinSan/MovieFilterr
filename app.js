@@ -229,7 +229,7 @@
 
     result.hidden = false;
     if (hasTimestamps) wireTimeline(title, withTs);
-    if (hasAdvisories) { wireFilters(); countUp(); }
+    if (hasAdvisories) { wireFilters(); countUp(); wireCollapse(); }
     wireShare(title);
     wireRecClicks();
     result.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
@@ -318,11 +318,20 @@
         </div>`;
     }).join("");
     return `
-      <section class="summary">
-        <div class="summary__head"><h3>Advisory summary</h3>
-          <span class="summary__total mono">${total} ${hasTimestamps ? "timestamped " : ""}notices · ${usedCats.length} categories</span></div>
-        <div class="cats">${cards}</div>
+      <section class="summary collapsible">
+        <div class="summary__head ssec-head" role="button" tabindex="0" aria-expanded="true">
+          <div class="ssec-head__l"><h3>Advisory summary</h3>
+            <span class="summary__total mono">${total} ${hasTimestamps ? "timestamped " : ""}notices · ${usedCats.length} categories</span></div>
+          ${collapseChevron()}
+        </div>
+        <div class="collapse-wrap"><div class="collapse-inner">
+          <div class="cats">${cards}</div>
+        </div></div>
       </section>`;
+  }
+
+  function collapseChevron() {
+    return `<span class="collapse-toggle" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
   }
 
   function timelineHTML(t, sorted, usedCats) {
@@ -386,10 +395,17 @@
     const sub = hasTimestamps ? "" :
       `<p class="cuelist__sub">Community-flagged content from DoesTheDogDie — no scene timecodes on the free tier, so these aren't time-ordered.</p>`;
     return `
-      <section class="cuelist">
-        <div class="cuelist__head"><h3>${head}</h3><div class="filters">${filters}</div></div>
-        ${sub}
-        <div class="cues" id="cues">${rows}</div>
+      <section class="cuelist collapsible">
+        <div class="cuelist__head">
+          <div class="ssec-head ssec-head--inline" role="button" tabindex="0" aria-expanded="true">
+            <h3>${head}</h3>${collapseChevron()}
+          </div>
+          <div class="filters">${filters}</div>
+        </div>
+        <div class="collapse-wrap"><div class="collapse-inner">
+          ${sub}
+          <div class="cues" id="cues">${rows}</div>
+        </div></div>
       </section>`;
   }
 
@@ -576,6 +592,18 @@
     }));
   }
 
+  function wireCollapse() {
+    $$(".ssec-head", result).forEach((head) => {
+      const sec = head.closest(".collapsible");
+      const toggle = () => {
+        const collapsed = sec.classList.toggle("is-collapsed");
+        head.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      };
+      head.addEventListener("click", (e) => { if (e.target.closest("a, .filter")) return; toggle(); });
+      head.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+    });
+  }
+
   function wireRecClicks() {
     $$(".rec", result).forEach((card) => {
       card.addEventListener("click", () => {
@@ -615,99 +643,121 @@
     return `${t.title}${t.year ? ` (${t.year})` : ""} — ${verdict}${extra}. Know before you watch → moviefilterr.vercel.app`;
   }
 
-  function buildShareImage(t) {
-    return new Promise((resolve) => {
-      const W = 1080, H = 1350, P = 80;
-      const cv = document.createElement("canvas");
-      cv.width = W; cv.height = H;
-      const x = cv.getContext("2d");
-      const light = document.documentElement.getAttribute("data-theme") === "light";
+  function loadShareImage(url) {
+    return new Promise((res) => {
+      if (!url) return res(null);
+      const img = new Image(); img.crossOrigin = "anonymous";
+      let done = false; const finish = (v) => { if (!done) { done = true; res(v); } };
+      img.onload = () => finish(img); img.onerror = () => finish(null);
+      img.src = "/api/img?u=" + encodeURIComponent(url); // same-origin proxy -> un-tainted canvas
+      setTimeout(() => finish(null), 4500);
+    });
+  }
 
-      // background
-      const bg = x.createLinearGradient(0, 0, W, H);
-      if (light) { bg.addColorStop(0, "#f3f1ec"); bg.addColorStop(1, "#dbeee8"); }
-      else { bg.addColorStop(0, "#0a0f0e"); bg.addColorStop(1, "#0b0b12"); }
-      x.fillStyle = bg; x.fillRect(0, 0, W, H);
-      // teal glow corner
-      const glow = x.createRadialGradient(W, 0, 0, W, 0, 760);
-      glow.addColorStop(0, "rgba(45,212,191,.30)"); glow.addColorStop(1, "rgba(45,212,191,0)");
-      x.fillStyle = glow; x.fillRect(0, 0, W, H);
+  async function buildShareImage(t) {
+    const W = 1080, H = 1350, P = 80;
+    const poster = await loadShareImage(t.poster);
+    const cv = document.createElement("canvas");
+    cv.width = W; cv.height = H;
+    const x = cv.getContext("2d");
+    const light = document.documentElement.getAttribute("data-theme") === "light";
 
-      const ink = light ? "#1a1822" : "#f4f1ea";
-      const dim = light ? "#6b6776" : "#9b97a8";
-      const card = (cx, cy, cw, ch, r) => { x.beginPath(); x.moveTo(cx + r, cy); x.arcTo(cx + cw, cy, cx + cw, cy + ch, r); x.arcTo(cx + cw, cy + ch, cx, cy + ch, r); x.arcTo(cx, cy + ch, cx, cy, r); x.arcTo(cx, cy, cx + cw, cy, r); x.closePath(); };
-      const F = (px, w) => `${w || 700} ${px}px "Nightingale", system-ui, sans-serif`;
-      const FH = (px, w) => `${w || 700} ${px}px "Life Cinema Screen", system-ui, sans-serif`;
+    const bg = x.createLinearGradient(0, 0, W, H);
+    if (light) { bg.addColorStop(0, "#f3f1ec"); bg.addColorStop(1, "#dbeee8"); }
+    else { bg.addColorStop(0, "#0a0f0e"); bg.addColorStop(1, "#0b0b12"); }
+    x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    const glow = x.createRadialGradient(W, 0, 0, W, 0, 820);
+    glow.addColorStop(0, "rgba(45,212,191,.28)"); glow.addColorStop(1, "rgba(45,212,191,0)");
+    x.fillStyle = glow; x.fillRect(0, 0, W, H);
 
-      // brand
-      x.textBaseline = "alphabetic";
-      x.font = FH(46, 700);
-      x.fillStyle = ink; x.fillText("Movie", P, 120);
-      const mW = x.measureText("Movie").width;
-      const tg = x.createLinearGradient(P + mW, 90, P + mW + 220, 130);
-      tg.addColorStop(0, "#2dd4bf"); tg.addColorStop(1, "#10b981");
-      x.fillStyle = tg; x.fillText("Filterr", P + mW, 120);
-      x.font = F(24, 500); x.fillStyle = dim;
-      x.fillText("KNOW EVERY SCENE BEFORE IT PLAYS", P, 156);
+    const ink = light ? "#1a1822" : "#f4f1ea";
+    const dim = light ? "#6b6776" : "#9b97a8";
+    const panel = light ? "rgba(0,0,0,.05)" : "rgba(255,255,255,.05)";
+    const rr = (cx, cy, cw, ch, r) => { x.beginPath(); x.moveTo(cx + r, cy); x.arcTo(cx + cw, cy, cx + cw, cy + ch, r); x.arcTo(cx + cw, cy + ch, cx, cy + ch, r); x.arcTo(cx, cy + ch, cx, cy, r); x.arcTo(cx, cy, cx + cw, cy, r); x.closePath(); };
+    const F = (px, w) => `${w || 700} ${px}px "Nightingale", system-ui, sans-serif`;
+    const FH = (px, w) => `${w || 700} ${px}px "Life Cinema Screen", system-ui, sans-serif`;
+    const cover = (img, dx, dy, dw, dh) => {
+      const ir = img.width / img.height, dr = dw / dh; let sw, sh, sx, sy;
+      if (ir > dr) { sh = img.height; sw = sh * dr; sx = (img.width - sw) / 2; sy = 0; }
+      else { sw = img.width; sh = sw / dr; sx = 0; sy = (img.height - sh) / 2; }
+      x.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+    };
 
-      // verdict band
-      const nud = nudityOf(t);
-      const vKnown = nudityKnown(t);
-      const vColor = nud ? "#ff5d8f" : vKnown ? "#10b981" : "#6ec1ff";
-      const vText = nud ? "CONTAINS NUDITY / SEX" : vKnown ? "NO NUDITY" : "NUDITY UNCONFIRMED";
-      let y = 250;
-      card(P, y, W - P * 2, 96, 20);
-      x.fillStyle = light ? "rgba(0,0,0,.04)" : "rgba(255,255,255,.04)"; x.fill();
-      x.fillStyle = vColor; card(P, y, 8, 96, 4); x.fill();
-      x.beginPath(); x.arc(P + 46, y + 48, 13, 0, 7); x.fillStyle = vColor; x.fill();
-      x.font = F(36, 700); x.fillStyle = ink; x.fillText(vText, P + 78, y + 60);
-      if (t.nudityVotes) { x.font = F(22, 500); x.fillStyle = dim; x.fillText(`community ${t.nudityVotes.yes}✓ / ${t.nudityVotes.no}✗`, P + 78, y + 86); }
+    x.textBaseline = "alphabetic";
+    // brand
+    x.font = FH(48, 700); x.fillStyle = ink; x.fillText("Movie", P, 116);
+    const mW = x.measureText("Movie").width;
+    const tg = x.createLinearGradient(P + mW, 86, P + mW + 240, 126);
+    tg.addColorStop(0, "#2dd4bf"); tg.addColorStop(1, "#10b981");
+    x.fillStyle = tg; x.fillText("Filterr", P + mW, 116);
+    x.font = F(23, 600); x.fillStyle = dim; x.fillText("KNOW EVERY SCENE BEFORE IT PLAYS", P, 152);
 
-      // title (wrapped)
-      y += 170;
-      x.fillStyle = ink; x.font = FH(76, 700);
-      const words = t.title.split(" "); let line = ""; const lines = [];
-      for (const w of words) { const test = line ? line + " " + w : w; if (x.measureText(test).width > W - P * 2 && line) { lines.push(line); line = w; } else line = test; }
-      if (line) lines.push(line);
-      for (const ln of lines.slice(0, 3)) { x.fillText(ln, P, y); y += 84; }
-      x.font = F(28, 500); x.fillStyle = dim;
-      x.fillText([t.year, t.cert, t.type === "tv" ? "TV Series" : "Film"].filter(Boolean).join("   ·   "), P, y + 6);
-      y += 60;
+    // poster
+    const px0 = P, py0 = 200, pw = 320, ph = 480;
+    x.save(); rr(px0, py0, pw, ph, 22); x.clip();
+    if (poster) cover(poster, px0, py0, pw, ph);
+    else {
+      const pg = x.createLinearGradient(px0, py0, px0 + pw, py0 + ph);
+      pg.addColorStop(0, "#16413b"); pg.addColorStop(1, "#0c2a27"); x.fillStyle = pg; x.fillRect(px0, py0, pw, ph);
+      x.fillStyle = "rgba(255,255,255,.85)"; x.font = FH(116, 700); x.textAlign = "center";
+      x.fillText(initials(t), px0 + pw / 2, py0 + ph / 2 + 38); x.textAlign = "left";
+    }
+    x.restore();
+    rr(px0, py0, pw, ph, 22); x.lineWidth = 2; x.strokeStyle = light ? "rgba(0,0,0,.12)" : "rgba(255,255,255,.14)"; x.stroke();
 
-      // category counts
-      const byCat = {}; (t.advisories || []).forEach((a) => (byCat[a.category] = (byCat[a.category] || 0) + 1));
-      const cats = Object.keys(CATEGORIES).filter((c) => byCat[c]);
-      let cx = P;
-      cats.forEach((c) => {
-        const label = `${CATEGORIES[c].label}  ${byCat[c]}`;
-        x.font = F(26, 600); const w = x.measureText(label).width + 56;
-        if (cx + w > W - P) { cx = P; y += 64; }
-        card(cx, y, w, 48, 24); x.fillStyle = light ? "rgba(0,0,0,.05)" : "rgba(255,255,255,.05)"; x.fill();
-        x.beginPath(); x.arc(cx + 26, y + 24, 7, 0, 7); x.fillStyle = CATEGORIES[c].color; x.fill();
-        x.fillStyle = ink; x.fillText(label, cx + 44, y + 32);
-        cx += w + 14;
-      });
-      y += 92;
+    // right column
+    const tx = px0 + pw + 46, tw = W - tx - P;
+    const nud = nudityOf(t), vKnown = nudityKnown(t);
+    const vColor = nud ? "#ff5d8f" : vKnown ? "#10b981" : "#6ec1ff";
+    const vText = nud ? "CONTAINS NUDITY/SEX" : vKnown ? "NO NUDITY" : "UNCONFIRMED";
+    let ty = py0 + 16;
+    x.font = F(24, 700); const pillW = Math.min(x.measureText(vText).width + 76, tw);
+    rr(tx, ty, pillW, 56, 28); x.fillStyle = panel; x.fill();
+    x.beginPath(); x.arc(tx + 32, ty + 28, 11, 0, 7); x.fillStyle = vColor; x.fill();
+    x.fillStyle = ink; x.fillText(vText, tx + 54, ty + 37); ty += 92;
+    if (t.nudityVotes) { x.font = F(22, 500); x.fillStyle = dim; x.fillText(`community ${t.nudityVotes.yes}✓ / ${t.nudityVotes.no}✗`, tx, ty); ty += 38; }
+    // title (wrapped)
+    x.fillStyle = ink; x.font = FH(60, 700);
+    const words = t.title.split(" "); let line = ""; const lines = [];
+    for (const w of words) { const test = line ? line + " " + w : w; if (x.measureText(test).width > tw && line) { lines.push(line); line = w; } else line = test; }
+    if (line) lines.push(line);
+    ty += 22;
+    for (const ln of lines.slice(0, 4)) { x.fillText(ln, tx, ty); ty += 66; }
+    x.font = F(26, 600); x.fillStyle = dim;
+    x.fillText([t.year, t.cert, t.type === "tv" ? "TV" : "Film"].filter(Boolean).join("   ·   "), tx, ty + 2);
 
-      // top advisories
-      const adv = [...(t.advisories || [])].sort((a, b) => b.severity - a.severity).slice(0, 5);
-      x.font = F(24, 700); x.fillStyle = dim; x.fillText("WHAT TO KNOW", P, y); y += 44;
+    // lower section
+    let y = Math.max(py0 + ph, ty) + 72;
+    const byCat = {}; (t.advisories || []).forEach((a) => (byCat[a.category] = (byCat[a.category] || 0) + 1));
+    const cats = Object.keys(CATEGORIES).filter((c) => byCat[c]);
+    let cx = P;
+    cats.forEach((c) => {
+      const label = `${CATEGORIES[c].label}  ${byCat[c]}`;
+      x.font = F(25, 600); const w = x.measureText(label).width + 54;
+      if (cx + w > W - P) { cx = P; y += 60; }
+      rr(cx, y, w, 46, 23); x.fillStyle = panel; x.fill();
+      x.beginPath(); x.arc(cx + 24, y + 23, 7, 0, 7); x.fillStyle = CATEGORIES[c].color; x.fill();
+      x.fillStyle = ink; x.fillText(label, cx + 42, y + 31); cx += w + 14;
+    });
+    y += 92;
+
+    const adv = [...(t.advisories || [])].sort((a, b) => b.severity - a.severity).slice(0, 5);
+    if (adv.length) {
+      x.font = F(24, 700); x.fillStyle = dim; x.fillText("WHAT TO KNOW", P, y); y += 46;
       adv.forEach((a) => {
-        x.beginPath(); x.arc(P + 8, y - 8, 7, 0, 7); x.fillStyle = CATEGORIES[a.category].color; x.fill();
+        x.beginPath(); x.arc(P + 8, y - 9, 7, 0, 7); x.fillStyle = CATEGORIES[a.category].color; x.fill();
         x.font = F(30, 500); x.fillStyle = ink;
         let note = a.note; while (x.measureText(note).width > W - P * 2 - 40 && note.length > 8) note = note.slice(0, -6) + "…";
-        x.fillText(note, P + 32, y); y += 52;
+        x.fillText(note, P + 34, y); y += 54;
       });
+    }
 
-      // footer
-      x.font = F(26, 600); x.fillStyle = "#2dd4bf";
-      x.fillText("moviefilterr.vercel.app", P, H - 70);
-      x.textAlign = "right"; x.fillStyle = dim; x.font = F(22, 500);
-      x.fillText("data: TMDB · DoesTheDogDie", W - P, H - 70);
-      x.textAlign = "left";
+    // footer
+    x.font = F(26, 700); x.fillStyle = "#2dd4bf"; x.fillText("moviefilterr.vercel.app", P, H - 72);
+    x.textAlign = "right"; x.fillStyle = dim; x.font = F(22, 500);
+    x.fillText("data: TMDB · DoesTheDogDie", W - P, H - 72); x.textAlign = "left";
 
-      cv.toBlob((b) => resolve(b), "image/png", 0.95);
-    });
+    return await new Promise((res) => cv.toBlob((b) => res(b), "image/png", 0.95));
   }
 
   function wireShare(t) {
