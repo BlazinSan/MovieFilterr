@@ -124,7 +124,8 @@
       tagline: t.tagline || (cur && cur.tagline) || "",
       poster: t.poster || null,
       imdb_id: t.imdb_id || null,
-      advisories: cur ? cur.advisories : [],
+      // curated timestamps win; otherwise DTDD's categorised (timecode-less) list
+      advisories: cur ? cur.advisories : (t.advisories || []),
       // API sends true (confirmed) | false (DTDD confirms absence) | null
       // (no reliable signal). null falls through to the "unconfirmed" state.
       liveNudity: typeof t.nudity === "boolean" ? t.nudity : null,
@@ -202,43 +203,61 @@
 
   function render(title) {
     const nud = nudityOf(title);
-    const sorted = [...(title.advisories || [])].sort((a, b) => a.t - b.t);
+    const advisories = [...(title.advisories || [])];
+    const catOrder = Object.keys(CATEGORIES);
+    const hasTimestamps = advisories.some((a) => typeof a.t === "number");
+    const hasAdvisories = advisories.length > 0;
+    // order: by timecode when available, else by category then severity
+    advisories.sort((a, b) =>
+      hasTimestamps ? (a.t || 0) - (b.t || 0)
+        : (catOrder.indexOf(a.category) - catOrder.indexOf(b.category)) || (b.severity - a.severity));
     const byCat = {};
-    for (const a of sorted) (byCat[a.category] ||= []).push(a);
-    const usedCats = Object.keys(CATEGORIES).filter((c) => byCat[c]);
-    const hasTs = sorted.length > 0;
+    for (const a of advisories) (byCat[a.category] ||= []).push(a);
+    const usedCats = catOrder.filter((c) => byCat[c]);
+    const withTs = advisories.filter((a) => typeof a.t === "number");
 
     result.innerHTML = `
       <article class="rcard">
         ${headerHTML(title)}
-        ${verdictHTML(title, nud, hasTs)}
-        ${hasTs ? summaryHTML(byCat, usedCats, sorted.length) : ""}
-        ${hasTs ? timelineHTML(title, sorted, usedCats) : ""}
-        ${hasTs ? cueListHTML(sorted, usedCats) : noTimestampsHTML(title, nud)}
+        ${verdictHTML(title, nud, hasTimestamps)}
+        ${hasAdvisories ? summaryHTML(byCat, usedCats, advisories.length, hasTimestamps) : ""}
+        ${hasTimestamps ? timelineHTML(title, withTs, usedCats) : ""}
+        ${hasAdvisories ? cueListHTML(advisories, usedCats, hasTimestamps) : noTimestampsHTML(title, nud)}
         ${sourcesHTML(title)}
         ${recsHTML(title, nud)}
       </article>`;
 
     result.hidden = false;
-    if (hasTs) { wireTimeline(title, sorted); wireFilters(); countUp(); }
+    if (hasTimestamps) wireTimeline(title, withTs);
+    if (hasAdvisories) { wireFilters(); countUp(); }
+    wireShare(title);
     wireRecClicks();
     result.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }
 
   function headerHTML(t) {
-    const live = t.tmdbId ? `<span class="tag tag--live">TMDB ✓</span>` : "";
+    const tmdbUrl = t.tmdbId ? `https://www.themoviedb.org/${t.type}/${t.tmdbId}` : null;
+    const live = tmdbUrl
+      ? `<a class="tag tag--live" href="${tmdbUrl}" target="_blank" rel="noopener noreferrer" title="View on TMDB">TMDB ↗</a>`
+      : "";
     return `
       <header class="rhead">
         <div class="rhead__poster" style="${posterStyle(t)}">${posterInner(t, true)}</div>
         <div class="rhead__main">
           <div class="rhead__kicker">
+            ${live}
             <span class="tag tag--cert">${t.cert || "NR"}</span>
             <span class="tag tag--type">${t.type === "tv" ? "TV Series" : "Film"}</span>
             ${t.year ? `<span class="tag">${t.year}</span>` : ""}
             ${t.runtime ? `<span class="tag">${fmtTime(t.runtime)}${t.type === "tv" ? " / ep" : ""}</span>` : ""}
-            ${live}
           </div>
-          <h2 class="rhead__title">${t.title}</h2>
+          <div class="rhead__titlerow">
+            <h2 class="rhead__title">${t.title}</h2>
+            <button class="sharebtn" id="shareBtn" type="button" aria-label="Share a summary card">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3v13M12 3l-4 4M12 3l4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Share</span>
+            </button>
+          </div>
           ${t.tagline ? `<p class="rhead__tagline">“${t.tagline}”</p>` : ""}
           <div class="rhead__genres">${(t.genres || []).map((g) => `<span class="genre">${g}</span>`).join("")}</div>
         </div>
@@ -285,7 +304,7 @@
       </div>`;
   }
 
-  function summaryHTML(byCat, usedCats, total) {
+  function summaryHTML(byCat, usedCats, total, hasTimestamps) {
     const cards = usedCats.map((c) => {
       const meta = CATEGORIES[c];
       const items = byCat[c];
@@ -301,7 +320,7 @@
     return `
       <section class="summary">
         <div class="summary__head"><h3>Advisory summary</h3>
-          <span class="summary__total mono">${total} timestamped notices · ${usedCats.length} categories</span></div>
+          <span class="summary__total mono">${total} ${hasTimestamps ? "timestamped " : ""}notices · ${usedCats.length} categories</span></div>
         <div class="cats">${cards}</div>
       </section>`;
   }
@@ -344,25 +363,32 @@
       </section>`;
   }
 
-  function cueListHTML(sorted, usedCats) {
+  function cueListHTML(sorted, usedCats, hasTimestamps) {
     const filters = `<button class="filter is-active" data-cat="all">All</button>` +
       usedCats.map((c) => { const m = CATEGORIES[c];
         return `<button class="filter" data-cat="${c}" style="--cat:${m.color}"><i></i>${m.label}</button>`; }).join("");
     const rows = sorted.map((a) => {
       const m = CATEGORIES[a.category];
       const dots = [1, 2, 3].map((n) => `<span class="cue__sevdot ${n <= a.severity ? "on" : ""}"></span>`).join("");
+      const lead = typeof a.t === "number"
+        ? `<span class="cue__time mono">${fmtTime(a.t)}</span>`
+        : `<span class="cue__time cue__sevtag" data-sev="${a.severity}">${SEVERITY[a.severity].label}</span>`;
       return `
-        <div class="cue" data-cat="${a.category}" data-t="${a.t}" style="--cat:${m.color}">
-          <span class="cue__time mono">${fmtTime(a.t)}</span>
+        <div class="cue" data-cat="${a.category}" ${typeof a.t === "number" ? `data-t="${a.t}"` : ""} style="--cat:${m.color}">
+          ${lead}
           <span class="cue__icon">${m.glyph}</span>
           <div class="cue__body"><span class="cue__cat">${m.label} · ${SEVERITY[a.severity].label}</span>
-            <p class="cue__note">${a.note}</p></div>
+            <p class="cue__note">${a.note}${a.votes ? ` <span class="cue__votes">${a.votes.yes}✓</span>` : ""}</p></div>
           <span class="cue__sev">${dots}</span>
         </div>`;
     }).join("");
+    const head = hasTimestamps ? "Every notice, in order" : "What you should know";
+    const sub = hasTimestamps ? "" :
+      `<p class="cuelist__sub">Community-flagged content from DoesTheDogDie — no scene timecodes on the free tier, so these aren't time-ordered.</p>`;
     return `
       <section class="cuelist">
-        <div class="cuelist__head"><h3>Every notice, in order</h3><div class="filters">${filters}</div></div>
+        <div class="cuelist__head"><h3>${head}</h3><div class="filters">${filters}</div></div>
+        ${sub}
         <div class="cues" id="cues">${rows}</div>
       </section>`;
   }
@@ -370,11 +396,10 @@
   function noTimestampsHTML(t, nud) {
     return `
       <section class="notimes">
-        <div class="notimes__icon">${nud ? "◐" : "🎞️"}</div>
-        <h3>No verified timestamps in our log${t.curated ? "" : " yet"}</h3>
-        <p>TMDB gives a reliable <strong>${nud ? "nudity-present" : "nudity status"}</strong> signal, but
-        <strong>no public API exposes frame-accurate timecodes</strong>. For scene-level timing,
-        the crowd-sourced links below are the place to look.</p>
+        <div class="notimes__icon">🔎</div>
+        <h3>No detailed advisories for this title yet</h3>
+        <p>It isn't in the community database, so there's nothing crowd-verified to show.
+        The sources below are the best place to check by hand.</p>
       </section>`;
   }
 
@@ -438,7 +463,6 @@
         <div class="rec__body">
           <span class="rec__title">${r.title}</span>
           <span class="rec__meta">${[r.year, r.cert, r.type === "tv" ? "TV" : "Film"].filter(Boolean).join(" · ")}</span>
-          ${r.shared && r.shared.length ? `<span class="rec__match">↳ shares <b>${r.overlap}</b> genre${r.overlap > 1 ? "s" : ""}: ${r.shared.join(", ")}</span>` : `<span class="rec__match">↳ same-genre pick</span>`}
         </div>
       </button>`).join("");
     return `<section class="recs">${head}<div class="recgrid">${cards}</div></section>`;
@@ -577,6 +601,135 @@
       const step = Math.max(1, Math.ceil(target / 14));
       const tick = () => { n = Math.min(target, n + step); el.textContent = n; if (n < target) requestAnimationFrame(tick); };
       requestAnimationFrame(tick);
+    });
+  }
+
+  /* --------------------- share a summary card image --------------------- */
+  function slug(s) { return (s || "title").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+
+  function shareSummaryText(t) {
+    const nud = nudityOf(t);
+    const verdict = nud ? "⚠ Contains nudity/sex" : nudityKnown(t) ? "✓ No nudity" : "Nudity unconfirmed";
+    const cats = [...new Set((t.advisories || []).map((a) => CATEGORIES[a.category].label))];
+    const extra = cats.length ? ` · Flagged: ${cats.slice(0, 4).join(", ")}` : "";
+    return `${t.title}${t.year ? ` (${t.year})` : ""} — ${verdict}${extra}. Know before you watch → moviefilterr.vercel.app`;
+  }
+
+  function buildShareImage(t) {
+    return new Promise((resolve) => {
+      const W = 1080, H = 1350, P = 80;
+      const cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      const x = cv.getContext("2d");
+      const light = document.documentElement.getAttribute("data-theme") === "light";
+
+      // background
+      const bg = x.createLinearGradient(0, 0, W, H);
+      if (light) { bg.addColorStop(0, "#f3f1ec"); bg.addColorStop(1, "#dbeee8"); }
+      else { bg.addColorStop(0, "#0a0f0e"); bg.addColorStop(1, "#0b0b12"); }
+      x.fillStyle = bg; x.fillRect(0, 0, W, H);
+      // teal glow corner
+      const glow = x.createRadialGradient(W, 0, 0, W, 0, 760);
+      glow.addColorStop(0, "rgba(45,212,191,.30)"); glow.addColorStop(1, "rgba(45,212,191,0)");
+      x.fillStyle = glow; x.fillRect(0, 0, W, H);
+
+      const ink = light ? "#1a1822" : "#f4f1ea";
+      const dim = light ? "#6b6776" : "#9b97a8";
+      const card = (cx, cy, cw, ch, r) => { x.beginPath(); x.moveTo(cx + r, cy); x.arcTo(cx + cw, cy, cx + cw, cy + ch, r); x.arcTo(cx + cw, cy + ch, cx, cy + ch, r); x.arcTo(cx, cy + ch, cx, cy, r); x.arcTo(cx, cy, cx + cw, cy, r); x.closePath(); };
+      const F = (px, w) => `${w || 700} ${px}px "Nightingale", system-ui, sans-serif`;
+      const FH = (px, w) => `${w || 700} ${px}px "Life Cinema Screen", system-ui, sans-serif`;
+
+      // brand
+      x.textBaseline = "alphabetic";
+      x.font = FH(46, 700);
+      x.fillStyle = ink; x.fillText("Movie", P, 120);
+      const mW = x.measureText("Movie").width;
+      const tg = x.createLinearGradient(P + mW, 90, P + mW + 220, 130);
+      tg.addColorStop(0, "#2dd4bf"); tg.addColorStop(1, "#10b981");
+      x.fillStyle = tg; x.fillText("Filterr", P + mW, 120);
+      x.font = F(24, 500); x.fillStyle = dim;
+      x.fillText("KNOW EVERY SCENE BEFORE IT PLAYS", P, 156);
+
+      // verdict band
+      const nud = nudityOf(t);
+      const vKnown = nudityKnown(t);
+      const vColor = nud ? "#ff5d8f" : vKnown ? "#10b981" : "#6ec1ff";
+      const vText = nud ? "CONTAINS NUDITY / SEX" : vKnown ? "NO NUDITY" : "NUDITY UNCONFIRMED";
+      let y = 250;
+      card(P, y, W - P * 2, 96, 20);
+      x.fillStyle = light ? "rgba(0,0,0,.04)" : "rgba(255,255,255,.04)"; x.fill();
+      x.fillStyle = vColor; card(P, y, 8, 96, 4); x.fill();
+      x.beginPath(); x.arc(P + 46, y + 48, 13, 0, 7); x.fillStyle = vColor; x.fill();
+      x.font = F(36, 700); x.fillStyle = ink; x.fillText(vText, P + 78, y + 60);
+      if (t.nudityVotes) { x.font = F(22, 500); x.fillStyle = dim; x.fillText(`community ${t.nudityVotes.yes}✓ / ${t.nudityVotes.no}✗`, P + 78, y + 86); }
+
+      // title (wrapped)
+      y += 170;
+      x.fillStyle = ink; x.font = FH(76, 700);
+      const words = t.title.split(" "); let line = ""; const lines = [];
+      for (const w of words) { const test = line ? line + " " + w : w; if (x.measureText(test).width > W - P * 2 && line) { lines.push(line); line = w; } else line = test; }
+      if (line) lines.push(line);
+      for (const ln of lines.slice(0, 3)) { x.fillText(ln, P, y); y += 84; }
+      x.font = F(28, 500); x.fillStyle = dim;
+      x.fillText([t.year, t.cert, t.type === "tv" ? "TV Series" : "Film"].filter(Boolean).join("   ·   "), P, y + 6);
+      y += 60;
+
+      // category counts
+      const byCat = {}; (t.advisories || []).forEach((a) => (byCat[a.category] = (byCat[a.category] || 0) + 1));
+      const cats = Object.keys(CATEGORIES).filter((c) => byCat[c]);
+      let cx = P;
+      cats.forEach((c) => {
+        const label = `${CATEGORIES[c].label}  ${byCat[c]}`;
+        x.font = F(26, 600); const w = x.measureText(label).width + 56;
+        if (cx + w > W - P) { cx = P; y += 64; }
+        card(cx, y, w, 48, 24); x.fillStyle = light ? "rgba(0,0,0,.05)" : "rgba(255,255,255,.05)"; x.fill();
+        x.beginPath(); x.arc(cx + 26, y + 24, 7, 0, 7); x.fillStyle = CATEGORIES[c].color; x.fill();
+        x.fillStyle = ink; x.fillText(label, cx + 44, y + 32);
+        cx += w + 14;
+      });
+      y += 92;
+
+      // top advisories
+      const adv = [...(t.advisories || [])].sort((a, b) => b.severity - a.severity).slice(0, 5);
+      x.font = F(24, 700); x.fillStyle = dim; x.fillText("WHAT TO KNOW", P, y); y += 44;
+      adv.forEach((a) => {
+        x.beginPath(); x.arc(P + 8, y - 8, 7, 0, 7); x.fillStyle = CATEGORIES[a.category].color; x.fill();
+        x.font = F(30, 500); x.fillStyle = ink;
+        let note = a.note; while (x.measureText(note).width > W - P * 2 - 40 && note.length > 8) note = note.slice(0, -6) + "…";
+        x.fillText(note, P + 32, y); y += 52;
+      });
+
+      // footer
+      x.font = F(26, 600); x.fillStyle = "#2dd4bf";
+      x.fillText("moviefilterr.vercel.app", P, H - 70);
+      x.textAlign = "right"; x.fillStyle = dim; x.font = F(22, 500);
+      x.fillText("data: TMDB · DoesTheDogDie", W - P, H - 70);
+      x.textAlign = "left";
+
+      cv.toBlob((b) => resolve(b), "image/png", 0.95);
+    });
+  }
+
+  function wireShare(t) {
+    const btn = $("#shareBtn", result); if (!btn) return;
+    btn.addEventListener("click", async () => {
+      const lbl = btn.querySelector("span"); const old = lbl.textContent;
+      btn.disabled = true; lbl.textContent = "…";
+      try {
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        const blob = await buildShareImage(t);
+        const file = new File([blob], `${slug(t.title)}-moviefilterr.png`, { type: "image/png" });
+        const text = shareSummaryText(t);
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: `${t.title} — MovieFilterr`, text });
+        } else {
+          const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+          a.download = file.name; document.body.appendChild(a); a.click();
+          setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+          lbl.textContent = "Saved ✓"; setTimeout(() => (lbl.textContent = old), 1600); return;
+        }
+      } catch (e) { /* cancelled */ }
+      finally { btn.disabled = false; if (lbl.textContent === "…") lbl.textContent = old; }
     });
   }
 
@@ -772,7 +925,7 @@
     if (window.MOVIEFILTERR_POSTERS) DATA.forEach((t) => {
       const p = window.MOVIEFILTERR_POSTERS[t.id]; if (p) t.poster = p;
     });
-    runIntro(); buildRibbon(); buildChips(); buildLibrary(); wireReveals(); wireThemeToggle();
+    runIntro(); buildChips(); buildLibrary(); wireReveals(); wireThemeToggle();
     // wire search immediately (works in demo mode) so the input is never dead
     wireSearch();
     // then detect live mode and upgrade the UI; handlers read LIVE at event time

@@ -2,6 +2,18 @@
    MovieFilterr — styles
    ========================================================================== */
 
+/* self-hosted fonts: Life Cinema Screen (headlines), Nightingale (body) */
+@font-face {
+  font-family: "Life Cinema Screen";
+  src: url("/fonts/LifeCinemaScreen-Regular.otf") format("opentype");
+  font-weight: 400 800; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Nightingale";
+  src: url("/fonts/DTNightingale-Light.ttf") format("truetype");
+  font-weight: 300 700; font-style: normal; font-display: swap;
+}
+
 :root {
   /* surfaces */
   --bg:        #07070b;
@@ -70,7 +82,7 @@ body { transition: background-color .5s var(--ease), color .5s var(--ease); }
 * { margin: 0; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
-  font-family: "Cabinet Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Nightingale", system-ui, -apple-system, "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--ink);
   line-height: 1.5;
@@ -131,7 +143,7 @@ kbd {
 }
 .intro.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
 .intro__mark {
-  font-family: "Clash Display", sans-serif; font-weight: 700;
+  font-family: "Life Cinema Screen", sans-serif; font-weight: 700;
   font-size: clamp(2.4rem, 8vw, 5rem); letter-spacing: -.02em;
   display: flex; align-items: center; gap: 0;
   opacity: 0; animation: introIn .7s var(--ease) .15s forwards;
@@ -176,7 +188,7 @@ kbd {
 }
 .topbar.is-stuck { border-color: var(--line); background: color-mix(in srgb, var(--bg) 88%, transparent); }
 .brand, .footer__brand, .intro__mark {
-  font-family: "Clash Display", sans-serif; font-weight: 700; letter-spacing: -.02em;
+  font-family: "Life Cinema Screen", sans-serif; font-weight: 700; letter-spacing: -.02em;
 }
 .brand { font-size: 1.35rem; display: flex; align-items: center; gap: 0; position: relative; z-index: 2; }
 .brand__point { background: var(--brand-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -202,7 +214,7 @@ kbd {
 main { position: relative; z-index: 2; }
 section { padding-inline: clamp(16px, 4vw, 40px); }
 .section-title {
-  font-family: "Clash Display", sans-serif; font-weight: 600;
+  font-family: "Life Cinema Screen", sans-serif; font-weight: 600;
   font-size: clamp(1.5rem, 3.5vw, 2.4rem); letter-spacing: -.02em;
   max-width: var(--maxw); margin: 0 auto 6px;
 }
@@ -217,7 +229,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
   opacity: 0; animation: introIn .8s var(--ease) .2s forwards;
 }
 .hero__title {
-  font-family: "Clash Display", sans-serif; font-weight: 600;
+  font-family: "Life Cinema Screen", sans-serif; font-weight: 600;
   font-size: clamp(2.6rem, 8vw, 5.4rem); line-height: .98; letter-spacing: -.03em;
   margin-bottom: 24px;
 }
@@ -322,7 +334,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
   width: 132px; aspect-ratio: 2/3; border-radius: var(--r-md); position: relative; overflow: hidden;
   display: grid; place-items: center; box-shadow: 0 18px 50px -20px rgba(0,0,0,.9);
 }
-.rhead__poster .pinitial { font-family: "Clash Display", sans-serif; font-weight: 700; font-size: 2.6rem; color: rgba(255,255,255,.92); text-shadow: 0 2px 16px rgba(0,0,0,.4); }
+.rhead__poster .pinitial { font-family: "Life Cinema Screen", sans-serif; font-weight: 700; font-size: 2.6rem; color: rgba(255,255,255,.92); text-shadow: 0 2px 16px rgba(0,0,0,.4); }
 .rhead__poster .pshine { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,.28), transparent 45%); }
 .rhead__main { min-width: 0; }
 .rhead__kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -332,7 +344,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 }
 .tag--cert { color: var(--teal); border-color: rgba(255,194,75,.4); }
 .tag--type { text-transform: uppercase; }
-.rhead__title { font-family: "Clash Display", sans-serif; font-weight: 600; font-size: clamp(1.6rem, 4vw, 2.5rem); letter-spacing: -.02em; line-height: 1.04; }
+.rhead__title { font-family: "Life Cinema Screen", sans-serif; font-weight: 600; font-size: clamp(1.6rem, 4vw, 2.5rem); letter-spacing: -.02em; line-height: 1.04; }
 .rhead__tagline { color: var(--ink-soft); font-style: italic; margin-top: 6px; }
 .rhead__genres { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
 .genre { font-size: .82rem; color: var(--ink-soft); border: 1px solid var(--line); padding: 5px 12px; border-radius: 100px; }
@@ -351,7 +363,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 /* summary counts */
 .summary { padding: 22px 24px; border-top: 1px solid var(--line); }
 .summary__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-.summary__head h3 { font-family: "Clash Display", sans-serif; font-weight: 600; font-size: 1.15rem; }
+.summary__head h3 { font-family: "Life Cinema Screen", sans-serif; font-weight: 600; font-size: 1.15rem; }
 .summary__total { font-family: "JetBrains Mono", monospace; color: var(--ink-dim); font-size: .85rem; }
 .cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
 .catcard {
@@ -364,7 +376,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 .catcard__top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .catcard__glyph { color: var(--cat); font-size: 1rem; }
 .catcard__label { font-size: .82rem; color: var(--ink-soft); font-weight: 500; }
-.catcard__count { font-family: "Clash Display", sans-serif; font-weight: 700; font-size: 1.9rem; line-height: 1; }
+.catcard__count { font-family: "Life Cinema Screen", sans-serif; font-weight: 700; font-size: 1.9rem; line-height: 1; }
 .catcard__sev { display: flex; gap: 4px; margin-top: 8px; }
 .sevdot { width: 6px; height: 6px; border-radius: 50%; background: var(--line-2); }
 .sevdot.on { background: var(--cat); }
@@ -372,7 +384,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 /* ---------- TIMELINE (signature) ---------- */
 .timeline { padding: 22px 24px 8px; border-top: 1px solid var(--line); }
 .timeline__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
-.timeline__head h3 { font-family: "Clash Display", sans-serif; font-weight: 600; font-size: 1.15rem; }
+.timeline__head h3 { font-family: "Life Cinema Screen", sans-serif; font-weight: 600; font-size: 1.15rem; }
 .timeline__legend { display: flex; flex-wrap: wrap; gap: 12px; }
 .legend { display: inline-flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--ink-soft); }
 .legend i { width: 9px; height: 9px; border-radius: 3px; background: var(--cat); }
@@ -433,7 +445,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 /* ---------- cue list ---------- */
 .cuelist { padding: 22px 24px; border-top: 1px solid var(--line); }
 .cuelist__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
-.cuelist__head h3 { font-family: "Clash Display", sans-serif; font-weight: 600; font-size: 1.15rem; }
+.cuelist__head h3 { font-family: "Life Cinema Screen", sans-serif; font-weight: 600; font-size: 1.15rem; }
 .filters { display: flex; flex-wrap: wrap; gap: 6px; }
 .filter {
   font-size: .76rem; padding: 6px 11px; border-radius: 100px; border: 1px solid var(--line);
@@ -465,7 +477,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 /* ---------- recommendations ---------- */
 .recs { padding: 6px 24px 28px; }
 .recs__head { display: flex; align-items: center; gap: 12px; margin: 18px 0 4px; }
-.recs__head h3 { font-family: "Clash Display", sans-serif; font-weight: 600; font-size: 1.25rem; }
+.recs__head h3 { font-family: "Life Cinema Screen", sans-serif; font-weight: 600; font-size: 1.25rem; }
 .recs__badge { font-family: "JetBrains Mono", monospace; font-size: .7rem; padding: 4px 9px; border-radius: 100px; background: rgba(93,211,158,.14); color: var(--c-substances); border: 1px solid rgba(93,211,158,.3); }
 .recs__sub { color: var(--ink-soft); margin-bottom: 18px; font-size: .96rem; }
 .recgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
@@ -476,7 +488,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 }
 .rec:hover { transform: translateY(-5px); border-color: var(--line-2); box-shadow: 0 20px 50px -25px rgba(0,0,0,.9); }
 .rec__poster { aspect-ratio: 16/10; position: relative; display: grid; place-items: center; }
-.rec__poster .pinitial { font-family: "Clash Display", sans-serif; font-weight: 700; font-size: 1.8rem; color: rgba(255,255,255,.92); }
+.rec__poster .pinitial { font-family: "Life Cinema Screen", sans-serif; font-weight: 700; font-size: 1.8rem; color: rgba(255,255,255,.92); }
 .rec__poster .pshine { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,.25), transparent 50%); }
 .rec__clean { position: absolute; top: 8px; right: 8px; font-family: "JetBrains Mono", monospace; font-size: .64rem; background: rgba(7,7,11,.7); border: 1px solid rgba(93,211,158,.4); color: var(--c-substances); padding: 3px 7px; border-radius: 100px; backdrop-filter: blur(4px); }
 .rec__body { padding: 12px 13px 14px; flex: 1; display: flex; flex-direction: column; }
@@ -488,7 +500,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 /* empty / not-found state */
 .empty { text-align: center; padding: 40px 20px; }
 .empty__glyph { font-size: 2.6rem; margin-bottom: 12px; opacity: .6; }
-.empty h3 { font-family: "Clash Display", sans-serif; font-weight: 600; font-size: 1.5rem; margin-bottom: 8px; }
+.empty h3 { font-family: "Life Cinema Screen", sans-serif; font-weight: 600; font-size: 1.5rem; margin-bottom: 8px; }
 .empty p { color: var(--ink-soft); max-width: 460px; margin: 0 auto 18px; }
 .empty__sugg { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 
@@ -503,7 +515,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 .how__card:hover { border-color: var(--line-2); }
 .how__card--accent { background: linear-gradient(180deg, rgba(93,211,158,.08), var(--panel)); border-color: rgba(93,211,158,.25); }
 .how__num { font-family: "JetBrains Mono", monospace; color: var(--teal); font-size: .8rem; letter-spacing: .2em; }
-.how__card h3 { font-family: "Clash Display", sans-serif; font-weight: 600; font-size: 1.35rem; margin: 14px 0 8px; }
+.how__card h3 { font-family: "Life Cinema Screen", sans-serif; font-weight: 600; font-size: 1.35rem; margin: 14px 0 8px; }
 .how__card p { color: var(--ink-soft); font-size: .96rem; }
 .how__card--accent .how__num { color: var(--c-substances); }
 
@@ -520,7 +532,7 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 .libcard.in { opacity: 1; transform: none; }
 .libcard:hover { transform: translateY(-5px); border-color: var(--line-2); box-shadow: 0 18px 44px -24px rgba(0,0,0,.9); }
 .libcard__poster { aspect-ratio: 2/3; position: relative; display: grid; place-items: center; }
-.libcard__poster .pinitial { font-family: "Clash Display", sans-serif; font-weight: 700; font-size: 2rem; color: rgba(255,255,255,.92); text-shadow: 0 2px 14px rgba(0,0,0,.35); }
+.libcard__poster .pinitial { font-family: "Life Cinema Screen", sans-serif; font-weight: 700; font-size: 2rem; color: rgba(255,255,255,.92); text-shadow: 0 2px 14px rgba(0,0,0,.35); }
 .libcard__poster .pshine { position: absolute; inset: 0; background: linear-gradient(140deg, rgba(255,255,255,.22), transparent 48%); }
 .libcard__flag { position: absolute; bottom: 8px; left: 8px; right: 8px; display: flex; gap: 4px; }
 .dotsev { height: 4px; border-radius: 4px; flex: 1; background: var(--cat); opacity: .85; }
@@ -599,12 +611,12 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 /* no-timestamps panel */
 .notimes { padding: 30px 24px; border-top: 1px solid var(--line); text-align: center; }
 .notimes__icon { font-size: 2rem; margin-bottom: 10px; opacity: .7; }
-.notimes h3 { font-family: "Clash Display", sans-serif; font-weight: 600; font-size: 1.25rem; margin-bottom: 8px; }
+.notimes h3 { font-family: "Life Cinema Screen", sans-serif; font-weight: 600; font-size: 1.25rem; margin-bottom: 8px; }
 .notimes p { color: var(--ink-soft); max-width: 540px; margin: 0 auto; font-size: .95rem; }
 
 /* sources */
 .sources { padding: 22px 24px; border-top: 1px solid var(--line); }
-.sources h3 { font-family: "Clash Display", sans-serif; font-weight: 600; font-size: 1.15rem; }
+.sources h3 { font-family: "Life Cinema Screen", sans-serif; font-weight: 600; font-size: 1.15rem; }
 .sources__sub { color: var(--ink-soft); font-size: .92rem; margin: 6px 0 16px; }
 .sources__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
 .source {
@@ -616,6 +628,80 @@ section { padding-inline: clamp(16px, 4vw, 40px); }
 .source__name svg { color: var(--ink-dim); transition: color .25s, transform .25s; }
 .source:hover .source__name svg { color: var(--teal); transform: translate(1px,-1px); }
 .source__note { font-size: .78rem; color: var(--ink-dim); }
+
+/* ============ v3: fonts, share, advisories, mobile, whitespace ============ */
+
+/* headline font tuning for Life Cinema Screen */
+.hero__title, .rhead__title, .section-title, .how__card h3 { letter-spacing: -.01em; }
+
+/* clickable TMDB tag */
+a.tag--live { cursor: pointer; transition: border-color .2s, color .2s, background .2s, transform .2s; }
+a.tag--live:hover { border-color: var(--teal); color: var(--teal); background: rgba(45,212,191,.12); transform: translateY(-1px); }
+
+/* title row + share button */
+.rhead__titlerow { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.rhead__titlerow .rhead__title { flex: 1; min-width: 0; }
+.sharebtn {
+  display: inline-flex; align-items: center; gap: 8px; flex: none; margin-top: 8px;
+  padding: 10px 18px; border-radius: 100px; border: 1px solid var(--line-2);
+  color: var(--ink); font-weight: 600; font-size: .92rem;
+  transition: transform .25s var(--ease), border-color .25s, background .25s; cursor: pointer;
+}
+.sharebtn:hover { transform: translateY(-1px); border-color: var(--teal); background: rgba(45,212,191,.10); }
+.sharebtn:active { transform: scale(.95); }
+.sharebtn:disabled { opacity: .6; cursor: default; }
+
+/* DTDD (no-timecode) advisory rows */
+.cuelist__sub { color: var(--ink-dim); font-size: .92rem; margin: -2px 0 18px; max-width: 660px; line-height: 1.45; }
+.cue__sevtag {
+  font-family: "JetBrains Mono", monospace; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase;
+  padding: 5px 0; border-radius: 100px; border: 1px solid var(--line-2); color: var(--ink-soft); text-align: center; align-self: center;
+}
+.cue__sevtag[data-sev="3"] { color: #07070b; background: var(--cat); border-color: transparent; font-weight: 700; }
+.cue__sevtag[data-sev="2"] { color: var(--cat); border-color: var(--cat); }
+.cue__votes { font-family: "JetBrains Mono", monospace; font-size: .78rem; color: var(--c-substances); margin-left: 6px; }
+
+/* whitespace / rhythm */
+.rhead { padding: 34px; gap: 28px; }
+.summary, .timeline, .cuelist, .sources, .recs { padding-top: 30px; padding-bottom: 30px; }
+.summary__head, .timeline__head, .cuelist__head { margin-bottom: 22px; }
+.cats { gap: 12px; }
+.cue { padding: 16px 0; }
+.how, .library { margin-top: clamp(70px, 11vw, 120px); }
+.how__grid, .library__grid { margin-top: 32px; }
+.how__card { padding: 30px; }
+.hero { padding-bottom: 46px; }
+.footer { margin-top: clamp(80px, 12vw, 130px); }
+
+/* recommendation shelf refresh (portrait posters) */
+.recs__sub { margin-bottom: 24px; }
+.recgrid { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 18px; }
+.rec { border-radius: var(--r-lg); }
+.rec__poster { aspect-ratio: 2 / 3; }
+.rec__poster .pinitial { font-size: 2.2rem; }
+.rec__body { padding: 14px 15px 17px; }
+.rec__title { font-size: 1.04rem; line-height: 1.2; }
+.rec__meta { margin-top: 5px; }
+.rec__clean {
+  top: 10px; right: 10px; font-size: .6rem; letter-spacing: .04em;
+  background: rgba(7,7,11,.62); border-color: rgba(45,212,191,.45); color: var(--teal);
+}
+
+/* mobile topbar — fit the scan button, drop the "/" */
+.topbar__cta { white-space: nowrap; }
+@media (max-width: 720px) {
+  .topbar { gap: 10px; padding: 12px 16px; }
+  .brand { font-size: 1.08rem; }
+  .topbar__cta { padding: 8px 14px; font-size: .82rem; gap: 0; }
+  .topbar__cta kbd { display: none; }
+  .themetoggle { width: 36px; height: 36px; }
+  .rhead__titlerow { flex-direction: column; gap: 10px; }
+  .sharebtn { margin-top: 0; align-self: flex-start; }
+}
+@media (max-width: 420px) {
+  .brand { font-size: 1rem; }
+  .topbar__cta { padding: 7px 12px; font-size: .78rem; }
+}
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce){

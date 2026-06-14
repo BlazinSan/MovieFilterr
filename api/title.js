@@ -103,6 +103,8 @@ export default async function handler(req, res) {
         nudityVotes,         // { yes, no } from DTDD when source is dtdd
         dtddUrl,
         dtddId,
+        // categorised, crowd-voted advisories (no timecodes) — always-available
+        advisories: dtdd?.advisories || [],
       },
       recommendations,
     });
