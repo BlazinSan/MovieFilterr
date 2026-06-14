@@ -20,14 +20,17 @@ async function ddd(path) {
   return r.json();
 }
 
-// map a DTDD topic phrase to one of our six categories (first match wins)
+// map a DTDD topic phrase to one of our six categories (first match wins).
+// NOTE: sexual violence/objectification is a MATURE THEME, not "nudity" — it must
+// be caught before the nudity rule so "sex" in "sexually assaulted" doesn't misfile.
 const CAT_RULES = [
-  ["nudity", /(nud|sex|breast|topless|genital|incest|porn|strip club|stripper|erotic|make ?out|making out|masturbat|lingerie)/i],
+  ["other", /(sexual assault|sexually assault|sexually objectif|sexually harass|molest|\brape\b|incest|pedophil|grooming)/i],
+  ["nudity", /(nudity|nude|breast|topless|genital|\bporn|strip club|stripper|erotic|make ?out|making out|masturbat|lingerie|sex scene|sexual content|sexualized|loses their virginity)/i],
   ["substances", /(drug|alcohol|smok|drunk|overdose|addict|cocaine|heroin|gets high|getting high|hypodermic|needle|vaping|marijuana|weed)/i],
   ["profanity", /(slur|n-word|f-word|f-slur|profanity|swear|cuss|racial slur)/i],
-  ["violence", /(blood|gore|gun|shot|shoot|kill|murder|stab|fight|torture|beaten|punch|\bwar\b|violence|massacre|slaughter|impale|decapitat|mutilat|abuse|whip|strangl)/i],
-  ["frightening", /(jump ?scare|flashing light|claustrophob|anxiety|panic attack|disturbing|body horror|spider|snake|vomit|gaslight|stalk|restrained|struggles to breathe|nightmare|possess|demon|grotesque|drown|falls to (his|her|their) death)/i],
-  ["other", /(dies|death|\bdead\b|suicide|self ?harm|cutting|shaving\/cutting|grief|miscarriage|terminal|cancer|kidnap|sexual assault|\brape\b|child.*(die|harm)|parent dies|cheat|divorce|sad ending|racism|homophob|abandon)/i],
+  ["violence", /(blood|gore|\bgun|\bshot|shoot|\bkill|murder|stab|fight|torture|beaten|punch|\bwar\b|violence|massacre|slaughter|impale|decapitat|mutilat|domestic abuse|child abuse|whip|strangl)/i],
+  ["frightening", /(jump ?scare|flashing light|claustrophob|anxiety|panic attack|disturbing|body horror|spider|snake|vomit|gaslight|stalk|restrained|struggles to breathe|nightmare|possess|\bdemon|grotesque|drown|falls to (his|her|their) death)/i],
+  ["other", /(dies|death|\bdead\b|suicide|self ?harm|cutting|shaving\/cutting|grief|miscarriage|terminal|cancer|kidnap|child.*(die|harm)|parent dies|cheat|divorce|abandon|homophob|racism)/i],
 ];
 
 function categorize(name) {
