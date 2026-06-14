@@ -1,4 +1,4 @@
-/* Shared TMDB helper for CUEPOINT serverless functions.
+/* Shared TMDB helper for MovieFilterr serverless functions.
    Underscore-prefixed folder => not treated as a route by Vercel, only imported.
 
    Configure ONE of these in the Vercel project env:

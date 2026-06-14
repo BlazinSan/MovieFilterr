@@ -1,5 +1,5 @@
 /* ============================================================================
-   CUEPOINT — curated parental-guidance dataset
+   MovieFilterr — curated parental-guidance dataset
    ----------------------------------------------------------------------------
    Each title carries a list of `advisories`, where every advisory is a single
    parental-guidance notice pinned to a timestamp (in seconds from the start).
@@ -382,4 +382,4 @@ const DATA = [
 ];
 
 // expose for non-module script tags (works from file://)
-window.CUEPOINT = { DATA, CATEGORIES, SEVERITY };
+window.MovieFilterr = { DATA, CATEGORIES, SEVERITY };

@@ -1,12 +1,12 @@
 /* ============================================================================
-   CUEPOINT — app logic
+   MovieFilterr — app logic
    Live mode: searches TMDB via /api/* (real nudity detection for ANY title).
    Fallback mode: curated dataset only (when no TMDB key is configured).
    ========================================================================== */
 (function () {
   "use strict";
 
-  const { DATA, CATEGORIES, SEVERITY } = window.CUEPOINT;
+  const { DATA, CATEGORIES, SEVERITY } = window.MovieFilterr;
   const $  = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -125,10 +125,13 @@
       poster: t.poster || null,
       imdb_id: t.imdb_id || null,
       advisories: cur ? cur.advisories : [],
-      // API sends true (tagged) or null (no tag = unconfirmed). Only a real
-      // boolean drives a verdict; null falls through to the "unconfirmed" state.
-      liveNudity: t.nudity === true ? true : null,
+      // API sends true (confirmed) | false (DTDD confirms absence) | null
+      // (no reliable signal). null falls through to the "unconfirmed" state.
+      liveNudity: typeof t.nudity === "boolean" ? t.nudity : null,
       nudityKeywords: t.nudityKeywords || [],
+      nuditySource: t.nuditySource || null,
+      nudityVotes: t.nudityVotes || null,
+      dtddUrl: t.dtddUrl || null,
       curated: !!cur,
       tmdbRecs: payload.recommendations || [],
     };
@@ -243,33 +246,42 @@
   }
 
   function verdictHTML(t, nud, hasTs) {
+    const dtddLink = t.dtddUrl
+      ? ` <a class="verdict__src" href="${t.dtddUrl}" target="_blank" rel="noopener noreferrer">DoesTheDogDie ↗</a>` : "";
+    const v = t.nudityVotes;
     if (nud) {
       const kw = t.nudityKeywords && t.nudityKeywords.length
-        ? ` <span class="verdict__kw">${t.nudityKeywords.slice(0, 4).join(" · ")}</span>` : "";
+        ? ` <span class="verdict__kw">${t.nudityKeywords.slice(0, 3).join(" · ")}</span>` : "";
       const ts = hasTs
         ? `<b>${t.advisories.filter((a) => a.category === "nudity").length} timestamped</b> below.`
         : `No frame-accurate timecodes are available — see the sources below.`;
+      let basis = "";
+      if (t.nuditySource === "dtdd" && v) basis = ` <span class="verdict__basis">Confirmed by community votes — ${v.yes}✓ / ${v.no}✗.${dtddLink}</span>`;
+      else if (t.nuditySource === "tmdb") basis = ` <span class="verdict__basis">Flagged by TMDB keyword tags.</span>`;
       return `
         <div class="verdict verdict--flag">
           <span class="verdict__dot"></span>
           <p class="verdict__text"><strong>Contains nudity / sexual content.</strong> ${ts}
-          We've surfaced <strong>same-genre picks with no nudity flagged</strong>.${kw}</p>
+          We've surfaced <strong>same-genre picks with no nudity flagged</strong>.${basis} ${kw}</p>
         </div>`;
     }
     if (nudityKnown(t)) {
+      let basis;
+      if (t.nuditySource === "dtdd" && v) basis = `Confirmed clear by community votes — ${v.no}✗ / ${v.yes}✓.${dtddLink}`;
+      else basis = "None in our verified log.";
       return `
         <div class="verdict verdict--clear">
           <span class="verdict__dot"></span>
-          <p class="verdict__text"><strong>No nudity in our verified log.</strong>
-          ${hasTs ? "Other advisories are timestamped below." : ""}</p>
+          <p class="verdict__text"><strong>No nudity.</strong> ${basis}
+          ${hasTs ? " Other advisories are timestamped below." : ""}</p>
         </div>`;
     }
     return `
       <div class="verdict verdict--unknown">
         <span class="verdict__dot"></span>
-        <p class="verdict__text"><strong>Nudity unconfirmed.</strong> TMDB has no nudity tag for this title —
-        but TMDB's tags are sparse, so this is <em>not</em> a guarantee of none. The
-        <strong>IMDb Parents Guide</strong> (linked below) is the reliable yes/no.</p>
+        <p class="verdict__text"><strong>Nudity unconfirmed.</strong> No nudity tag on TMDB and no
+        community verdict on DoesTheDogDie yet — so this is <em>not</em> a guarantee of none.
+        The <strong>IMDb Parents Guide</strong> (linked below) is the reliable yes/no.</p>
       </div>`;
   }
 
@@ -372,11 +384,12 @@
     const imdb = t.imdb_id
       ? `https://www.imdb.com/title/${t.imdb_id}/parentalguide`
       : `https://www.imdb.com/find/?q=${encodeURIComponent(t.title)}&s=tt`;
+    const dtdd = t.dtddUrl || g("site:doesthedogdie.com");
     const links = [
       ["IMDb Parents Guide", imdb, "severity levels (no timecodes)"],
+      ["Does the Dog Die?", dtdd, t.dtddUrl ? "crowd nudity votes — this title" : "crowd content votes"],
+      ["Unconsented", `https://www.unconsentingmedia.org/?s=${encodeURIComponent(t.title)}`, "crowd scene timecodes"],
       ["Reddit", `https://www.reddit.com/search/?q=${encodeURIComponent(t.title + " nudity scene")}`, "community threads"],
-      ["Unconsented", g("nudity timestamps site:unconsented.com"), "crowd scene timecodes"],
-      ["Does the Dog Die?", g("site:doesthedogdie.com"), "content flags"],
       ["Web search", g("nudity scene timestamp"), "everything else"],
     ];
     return `
@@ -435,7 +448,7 @@
     const sugg = DATA.slice(0, 6).map((t) => `<button class="chip" data-id="${t.id}">${t.title}</button>`).join("");
     const note = LIVE
       ? `TMDB has no movie or TV match for “${query}”. Check the spelling, or try one of these:`
-      : `Live search isn't configured, so CUEPOINT is running on its curated set — “${query}” isn't in it. Try one of these:`;
+      : `Live search isn't configured, so MovieFilterr is running on its curated set — “${query}” isn't in it. Try one of these:`;
     return `
       <article class="rcard">
         <div class="empty"><div class="empty__glyph">🎞️</div>
@@ -725,27 +738,41 @@
     $$(".how__card, .libcard").forEach((el) => io.observe(el));
   }
 
-  /* --------------------------- live-mode badge --------------------------- */
-  function showModeBadge() {
-    const nav = $(".topbar__nav"); if (!nav) return;
-    const b = document.createElement("span");
-    b.className = "modebadge " + (LIVE ? "is-live" : "is-demo");
-    b.innerHTML = LIVE
-      ? `<i></i>Live · TMDB`
-      : `<i></i>Demo · curated`;
-    b.title = LIVE ? "Connected to TMDB — search any title" : "No TMDB key set — searching the curated library only";
-    nav.insertBefore(b, nav.firstChild);
+  /* ----------------------------- theme toggle ---------------------------- */
+  function wireThemeToggle() {
+    const btn = $("#themeToggle");
+    if (!btn) return;
+    const root = document.documentElement;
+    const KEY = "mf-theme";
+    const sync = () => btn.setAttribute("aria-pressed", root.getAttribute("data-theme") === "light" ? "true" : "false");
+    sync();
+    btn.addEventListener("click", () => {
+      const next = root.getAttribute("data-theme") === "light" ? "dark" : "light";
+      const apply = () => { root.setAttribute("data-theme", next); try { localStorage.setItem(KEY, next); } catch (e) {} sync(); };
+      // animated circular reveal from the toggle, where supported
+      if (document.startViewTransition && !reduce) {
+        const r = btn.getBoundingClientRect();
+        const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        const end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+        const vt = document.startViewTransition(apply);
+        vt.ready.then(() => {
+          root.animate(
+            { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${end}px at ${x}px ${y}px)`] },
+            { duration: 540, easing: "cubic-bezier(.22,1,.36,1)", pseudoElement: "::view-transition-new(root)" }
+          );
+        });
+      } else apply();
+    });
   }
 
   /* -------------------------------- init --------------------------------- */
   async function init() {
     $("#year").textContent = new Date().getFullYear();
-    runIntro(); buildRibbon(); buildChips(); buildLibrary(); wireReveals();
+    runIntro(); buildRibbon(); buildChips(); buildLibrary(); wireReveals(); wireThemeToggle();
     // wire search immediately (works in demo mode) so the input is never dead
     wireSearch();
     // then detect live mode and upgrade the UI; handlers read LIVE at event time
     await detectLive();
-    showModeBadge();
     const input = $("#searchInput");
     if (input) input.placeholder = LIVE
       ? "Search any movie or show — “Oppenheimer”, “The Bear”, “Saltburn”…"

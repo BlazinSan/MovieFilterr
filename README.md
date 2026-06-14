@@ -1,6 +1,6 @@
-# CUEPOINT — every scene, timestamped
+# MovieFilterr — every scene, timestamped
 
-> Search any movie or show. CUEPOINT detects parental-guidance content (nudity,
+> Search any movie or show. MovieFilterr detects parental-guidance content (nudity,
 > violence, profanity, substances, frightening, mature themes), lays out a
 > **scrubbable timeline of timestamped notices**, and — when nudity is present —
 > recommends **same-genre titles with no nudity flagged**.
@@ -16,11 +16,10 @@ functions that proxy **TMDB** for live search and nudity detection.
 
 1. **Search** any title — live via TMDB (any film/show ever made), with fuzzy
    fallback over a curated library when TMDB isn't configured.
-2. **Nudity verdict** — three honest states:
-   - **Contains nudity** — confirmed (TMDB nudity keyword present, or in our verified log).
-   - **No nudity** — only for titles in our hand-verified log.
-   - **Unconfirmed** — TMDB has no nudity tag, *which is not a guarantee of none*
-     (TMDB's crowd tags are sparse). The UI points you to the IMDb Parents Guide.
+2. **Nudity verdict** — three honest states, best-source-wins:
+   - **Contains nudity** — confirmed via DoesTheDogDie crowd votes, a TMDB nudity tag, or our verified log.
+   - **No nudity** — confirmed (DoesTheDogDie crowd votes "no", or our verified log).
+   - **Unconfirmed** — no reliable signal yet; *not a guarantee of none*. The UI links the IMDb Parents Guide.
 3. **Timeline** — for titles in our verified log, every advisory is pinned to its
    timecode across colour-coded, scrubbable lanes (drag the playhead, hover a marker, arrow-key it).
 4. **Cue list** — a second-by-second list of every notice: category, severity, description, filterable.
@@ -32,19 +31,22 @@ functions that proxy **TMDB** for live search and nudity detection.
 
 **No public API returns frame-accurate nudity *timestamps* for arbitrary titles** —
 not TMDB, IMDb, Reddit, or any social platform (those have no such structured data,
-and scraping them is against ToS and technically blocked). So CUEPOINT is built from
+and scraping them is against ToS and technically blocked). So MovieFilterr is built from
 what *is* real and legitimate:
 
 | Source | What it actually gives | Used for |
 |--------|------------------------|----------|
-| **TMDB API** | search, genres, posters, certifications, **keyword tags** (incl. nudity), recommendations | live search, nudity *signal*, clean recs |
-| **Curated log** ([`data.js`](data.js)) | hand-authored, timestamped advisories for ~22 well-known titles | the scrubbable timeline + cue list |
-| **IMDb / Reddit / Unconsented / DTDD** | crowd-sourced scene info (no API) | one-click deep-link searches per title |
+| **TMDB API** | search, genres, posters, certifications, keyword tags, recommendations | live search, weak nudity tag, clean recs |
+| **DoesTheDogDie API** | crowd yes/no votes per content topic (incl. *nude scenes*, *sexual content*) | the **primary nudity verdict** — reliable yes *and* no |
+| **Curated log** ([`data.js`](data.js)) | hand-authored, timestamped advisories (~22 titles) | the scrubbable timeline + cue list |
+| **IMDb / Unconsented / Reddit** | crowd scene info (no usable API) | one-click deep-link searches per title |
 
-TMDB keyword coverage for nudity is **high-precision, low-recall** — a positive tag
-is trustworthy, but its *absence* is not, so CUEPOINT never reports a false "no nudity"
-for a TMDB-only title; it says **unconfirmed** and links you to the authoritative
-IMDb Parents Guide.
+TMDB keyword coverage for nudity is **high-precision, low-recall** — a positive tag is
+trustworthy, its *absence* is not. So **DoesTheDogDie crowd votes are the primary signal**
+(they can confirm presence *and* absence); TMDB tags are a fallback that can only confirm
+presence. When neither is conclusive, MovieFilterr says **unconfirmed** rather than a false
+"no nudity", and links the authoritative IMDb Parents Guide. (DTDD scene timecodes exist but
+are paywalled on the free API tier, so timestamps still come from the curated log.)
 
 ## Architecture
 
@@ -52,9 +54,10 @@ IMDb Parents Guide.
 index.html · styles.css · data.js · app.js      # static front-end (no build)
 api/
   _lib/tmdb.js     # shared TMDB client + keyword nudity signal (key stays server-side)
+  _lib/dtdd.js     # DoesTheDogDie client -> crowd-voted nudity verdict (yes/no)
   config.js        # GET /api/config -> { live } (is TMDB configured?)
   search.js        # GET /api/search?q= -> simplified multi-search
-  title.js         # GET /api/title?type=&id= -> detail + nudity + clean recs
+  title.js         # GET /api/title?type=&id= -> detail + combined nudity verdict + clean recs
 vercel.json · package.json
 ```
 
@@ -81,9 +84,10 @@ then redeploy:
 |-----|-------|
 | `TMDB_TOKEN` | TMDB **v4 Read Access Token** (long JWT) — sent as `Bearer` |
 | `TMDB_API_KEY` | TMDB **v3 API key** (32 chars) — sent as query param |
+| `DTDD_API_KEY` | DoesTheDogDie API key — enables the reliable crowd-voted nudity verdict (optional) |
 
 Get one free at [themoviedb.org](https://www.themoviedb.org/settings/api). The app
-auto-detects via `/api/config` and flips the header badge to **Live · TMDB**.
+auto-detects via `/api/config` and switches to live search automatically.
 
 ## Deploy
 

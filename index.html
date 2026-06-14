@@ -3,9 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="CUEPOINT — every parental-guidance notice, timestamped. Scrub any film or show by the second, and get clean same-genre picks when nudity appears." />
+  <meta name="description" content="MovieFilterr — every parental-guidance notice, timestamped. Scrub any film or show by the second, and get clean same-genre picks when nudity appears." />
   <meta name="theme-color" content="#07070b" />
-  <title>CUEPOINT — every scene, timestamped</title>
+  <title>MovieFilterr — every scene, timestamped</title>
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+
+  <!-- set theme before paint to avoid a flash -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem("mf-theme");
+        var light = window.matchMedia("(prefers-color-scheme: light)").matches;
+        document.documentElement.setAttribute("data-theme", saved || (light ? "light" : "dark"));
+      } catch (e) { document.documentElement.setAttribute("data-theme", "dark"); }
+    })();
+  </script>
 
   <!-- Distinctive type: Clash Display + Cabinet Grotesk (Fontshare), JetBrains Mono (Google) -->
   <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
@@ -28,7 +42,7 @@
   <!-- intro curtain -->
   <div class="intro" id="intro" aria-hidden="true">
     <div class="intro__mark">
-      <span class="intro__cue">CUE</span><span class="intro__dot"></span><span class="intro__point">POINT</span>
+      <span class="intro__cue">Movie</span><span class="intro__point">Filterr</span><span class="intro__dot"></span>
     </div>
     <div class="intro__scan"></div>
     <div class="intro__sub">loading the projection booth…</div>
@@ -36,13 +50,32 @@
 
   <!-- top bar -->
   <header class="topbar" id="topbar">
-    <a class="brand" href="#top" aria-label="CUEPOINT home">
-      <span class="brand__cue">CUE</span><span class="brand__dot" aria-hidden="true"></span><span class="brand__point">POINT</span>
+    <a class="brand" href="#top" aria-label="MovieFilterr home">
+      <span class="brand__cue">Movie</span><span class="brand__point">Filterr</span><span class="brand__dot" aria-hidden="true"></span>
     </a>
     <nav class="topbar__nav">
       <a href="#how" class="topbar__link">How it works</a>
       <a href="#library" class="topbar__link">Library</a>
       <button class="topbar__cta" id="focusSearch">Scan a title <kbd>/</kbd></button>
+      <button class="themetoggle" id="themeToggle" type="button" aria-label="Toggle light and dark theme" title="Toggle theme">
+        <svg class="themetoggle__svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <mask id="moon-mask">
+            <rect x="0" y="0" width="24" height="24" fill="white"/>
+            <circle class="themetoggle__bite" cx="18" cy="7" r="6" fill="black"/>
+          </mask>
+          <circle class="themetoggle__core" cx="12" cy="12" r="6" fill="currentColor" mask="url(#moon-mask)"/>
+          <g class="themetoggle__rays" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="12" y1="1.5" x2="12" y2="3.5"/>
+            <line x1="12" y1="20.5" x2="12" y2="22.5"/>
+            <line x1="3.5" y1="12" x2="1.5" y2="12"/>
+            <line x1="22.5" y1="12" x2="20.5" y2="12"/>
+            <line x1="5.6" y1="5.6" x2="4.2" y2="4.2"/>
+            <line x1="19.8" y1="19.8" x2="18.4" y2="18.4"/>
+            <line x1="5.6" y1="18.4" x2="4.2" y2="19.8"/>
+            <line x1="19.8" y1="4.2" x2="18.4" y2="5.6"/>
+          </g>
+        </svg>
+      </button>
     </nav>
   </header>
 
@@ -56,7 +89,7 @@
           <span class="reveal-line"><span>before it <em>plays.</em></span></span>
         </h1>
         <p class="hero__lede">
-          Type any movie or show. CUEPOINT lays out <strong>every parental-guidance
+          Type any movie or show. MovieFilterr lays out <strong>every parental-guidance
           notice on a timeline</strong> — exact timecodes, colour-coded by category.
           If a title contains nudity, we surface <strong>clean same-genre picks</strong> instead.
         </p>
@@ -129,13 +162,13 @@
   </main>
 
   <footer class="footer">
-    <div class="footer__brand"><span class="brand__cue">CUE</span><span class="brand__dot"></span><span class="brand__point">POINT</span></div>
+    <div class="footer__brand"><span class="brand__cue">Movie</span><span class="brand__point">Filterr</span><span class="brand__dot"></span></div>
     <p class="footer__note">
       Timecodes are hand-authored illustrative reference data for well-known titles —
       not a frame-accurate authority. No public API exposes timestamped advisories;
       this is the demonstration layer, built to accept a live data source.
     </p>
-    <p class="footer__legal">Made for informed, calmer viewing. © <span id="year"></span> CUEPOINT.</p>
+    <p class="footer__legal">Made for informed, calmer viewing. © <span id="year"></span> MovieFilterr.</p>
   </footer>
 
   <script src="data.js"></script>
