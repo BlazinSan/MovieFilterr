@@ -105,4 +105,4 @@ vercel --prod        # already linked to the "moviefilterr" project
 
 ---
 
-*Made for informed, calmer viewing.*
+*Made for safer, calmer viewing so you don't have to keep worrying.*
