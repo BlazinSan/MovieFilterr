@@ -419,7 +419,7 @@
     } else {
       items = localRecommend(title).map(({ t, overlap, shared }) => ({
         key: t.id, localId: t.id, type: t.type, title: t.title, year: t.year,
-        cert: t.cert, poster: null, _t: t, overlap, shared,
+        cert: t.cert, poster: t.poster || null, _t: t, overlap, shared,
       }));
     }
     if (!items.length) return "";
@@ -651,7 +651,7 @@
       return localSearch(q).map((t) => {
         const nud = nudityOf(t);
         return { id: t.id, title: t.title, year: t.year, type: t.type,
-          genresLabel: t.genres.slice(0, 2).join(", "), poster: null, _localRef: t,
+          genresLabel: t.genres.slice(0, 2).join(", "), poster: t.poster || null, _localRef: t,
           flag: nud ? "◐ nudity" : "✓ clean", flagColor: nud ? "var(--c-nudity)" : "var(--c-substances)" };
       });
     }
@@ -710,7 +710,7 @@
         .map((c) => `<span class="dotsev" style="--cat:${CATEGORIES[c].color}"></span>`).join("");
       return `
         <button class="libcard" data-id="${t.id}">
-          <div class="libcard__poster" style="${posterStyle(t)}"><span class="pinitial">${initials(t)}</span><span class="pshine"></span>
+          <div class="libcard__poster" style="${posterStyle(t)}">${posterInner(t)}
             <span class="libcard__flag">${sevBars}</span></div>
           <div class="libcard__body"><span class="libcard__title">${t.title}</span>
             <span class="libcard__meta">${t.year} · ${t.cert} · ${t.type === "tv" ? "TV" : "Film"}</span>
@@ -768,6 +768,10 @@
   /* -------------------------------- init --------------------------------- */
   async function init() {
     $("#year").textContent = new Date().getFullYear();
+    // attach real TMDB posters to the curated library
+    if (window.MOVIEFILTERR_POSTERS) DATA.forEach((t) => {
+      const p = window.MOVIEFILTERR_POSTERS[t.id]; if (p) t.poster = p;
+    });
     runIntro(); buildRibbon(); buildChips(); buildLibrary(); wireReveals(); wireThemeToggle();
     // wire search immediately (works in demo mode) so the input is never dead
     wireSearch();
